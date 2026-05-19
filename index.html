@@ -348,6 +348,45 @@
     .toggle::after { content: ''; position: absolute; width: 14px; height: 14px; background: #fff; border-radius: 50%; top: 3px; left: 3px; transition: left 0.18s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
     .toggle.on::after { left: 19px; }
 
+    /* ── 서브탭 ── */
+    #sub-tab-bar {
+      display: none;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 18px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+      overflow-x: auto;
+      flex-shrink: 0;
+    }
+    #sub-tab-bar::-webkit-scrollbar { height: 0; }
+    #sub-tab-bar.show { display: flex; }
+    .sub-tab {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--sub);
+      transition: all 0.12s;
+    }
+    .sub-tab:hover { background: var(--hover); color: var(--text); }
+    .sub-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .sub-tab-add {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      cursor: pointer;
+      border: 1px dashed var(--border);
+      background: transparent;
+      color: var(--sub);
+      transition: all 0.12s;
+      flex-shrink: 0;
+    }
+    .sub-tab-add:hover { border-color: var(--accent); color: var(--accent); }
+
     #toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--text); color: var(--panel); padding: 8px 16px; border-radius: 18px; font-size: 12px; font-weight: 500; opacity: 0; pointer-events: none; transition: opacity 0.18s, transform 0.18s; z-index: 999; }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   </style>
@@ -367,6 +406,7 @@
     <h2 id="current-cat-name">카테고리 선택</h2>
     <button class="header-btn primary" id="add-memo-btn">+ 메모</button>
   </div>
+  <div id="sub-tab-bar"></div>
   <div id="memo-area">
     <div id="no-cat-msg">왼쪽에서 카테고리를 선택하세요</div>
     <div id="memo-grid" style="display:none;"></div>
@@ -433,6 +473,7 @@
 
   let data = { categories: [] };
   let currentCatId = null;
+  let currentSubCatId = null;
   let currentMemoId = null;
   let autoCopy = true;
   let saveTimer = null;
@@ -531,6 +572,7 @@
     isRemoteUpdate = true;
     if (!currentCatId && data.categories.length) currentCatId = data.categories[0].id;
     renderCats();
+    renderSubTabs();
     renderMemos();
     isRemoteUpdate = false;
   });
@@ -601,6 +643,54 @@
     });
   }
 
+  // ── 서브탭 렌더 ──
+  function renderSubTabs() {
+    const bar = document.getElementById('sub-tab-bar');
+    if (!currentCatId) { bar.classList.remove('show'); return; }
+    const cat = data.categories.find(c => c.id === currentCatId);
+    if (!cat) return;
+    const subcats = cat.subcats || [];
+
+    if (!subcats.length) { bar.classList.remove('show'); return; }
+    bar.classList.add('show');
+
+    bar.innerHTML = `
+      <button class="sub-tab ${!currentSubCatId ? 'active' : ''}" data-id="">전체</button>
+      ${subcats.map(s => `<button class="sub-tab ${currentSubCatId === s.id ? 'active' : ''}" data-id="${s.id}">${esc(s.name)}</button>`).join('')}
+      <button class="sub-tab-add" id="add-subcat-btn">+ 탭</button>
+    `;
+
+    bar.querySelectorAll('.sub-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        currentSubCatId = tab.dataset.id || null;
+        renderSubTabs();
+        renderMemos();
+      });
+      tab.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        if (!tab.dataset.id) return;
+        const s = subcats.find(s => s.id === tab.dataset.id);
+        if (!s) return;
+        if (confirm(`"${s.name}" 탭 삭제할까요?`)) {
+          cat.subcats = cat.subcats.filter(sc => sc.id !== s.id);
+          cat.memos.forEach(m => { if (m.subcatId === s.id) m.subcatId = null; });
+          if (currentSubCatId === s.id) currentSubCatId = null;
+          save(); renderSubTabs(); renderMemos();
+        }
+      });
+    });
+
+    document.getElementById('add-subcat-btn')?.addEventListener('click', () => {
+      const name = prompt('탭 이름을 입력하세요');
+      if (!name?.trim()) return;
+      if (!cat.subcats) cat.subcats = [];
+      const id = Date.now().toString();
+      cat.subcats.push({ id, name: name.trim() });
+      currentSubCatId = id;
+      save(); renderSubTabs(); renderMemos();
+    });
+  }
+
   // ── 메모 렌더 ──
   function renderMemos() {
     const noMsg = document.getElementById('no-cat-msg');
@@ -617,8 +707,12 @@
     header.textContent = cat.name;
     noMsg.style.display = 'none'; grid.style.display = 'flex';
 
-    grid.innerHTML = cat.memos.map((m, i) => `
-      <div class="memo-card" data-id="${m.id}" data-index="${i}">
+    const memos = currentSubCatId
+      ? cat.memos.map((m, i) => ({ ...m, _i: i })).filter(m => m.subcatId === currentSubCatId)
+      : cat.memos.map((m, i) => ({ ...m, _i: i }));
+
+    grid.innerHTML = memos.map((m) => `
+      <div class="memo-card" data-id="${m.id}" data-index="${m._i}">
         <span class="memo-card-handle" title="드래그로 위치 변경">⠿</span>
         <div class="memo-card-info">
           <div class="memo-card-title">${esc(m.title || '제목 없음')}</div>
@@ -668,8 +762,10 @@
   // ── 선택 ──
   function selectCat(id) {
     currentCatId = id;
+    currentSubCatId = null;
     saveCfg();
     renderCats();
+    renderSubTabs();
     renderMemos();
   }
 
@@ -689,7 +785,7 @@
     if (!currentCatId) return;
     const cat = data.categories.find(c => c.id === currentCatId);
     const id = Date.now().toString();
-    cat.memos.unshift({ id, title: '', content: '', updatedAt: Date.now() });
+    cat.memos.unshift({ id, title: '', content: '', updatedAt: Date.now(), subcatId: currentSubCatId || null });
     save(); renderCats(); renderMemos();
     openModal(id);
     setTimeout(() => document.getElementById('modal-title').focus(), 50);
