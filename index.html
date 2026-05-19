@@ -849,24 +849,16 @@
         openModal(card.dataset.id);
       });
 
-      // 우클릭 → 복제 or 삭제
+      // 우클릭 → 삭제
       card.addEventListener('contextmenu', e => {
         e.preventDefault();
         const cat = data.categories.find(c => c.id === currentCatId);
         const memo = cat?.memos.find(m => m.id === card.dataset.id);
         if (!memo) return;
-        const action = confirm(`"${memo.title || '제목 없음'}"\n\n확인 = 복제 / 취소 = 삭제`);
-        if (action) {
-          const id = Date.now().toString();
-          const idx = cat.memos.findIndex(m => m.id === card.dataset.id);
-          cat.memos.splice(idx + 1, 0, { ...memo, id, updatedAt: Date.now() });
+        if (confirm(`"${memo.title || '제목 없음'}" 메모를 삭제할까요?`)) {
+          pushUndo();
+          cat.memos = cat.memos.filter(m => m.id !== card.dataset.id);
           save(); renderCats(); renderMemos();
-          toast('메모 복제됨');
-        } else {
-          if (confirm(`"${memo.title || '제목 없음'}" 메모를 삭제할까요?`)) {
-            cat.memos = cat.memos.filter(m => m.id !== card.dataset.id);
-            save(); renderCats(); renderMemos();
-          }
         }
       });
 
@@ -919,6 +911,7 @@
 
   function addMemo() {
     if (!currentCatId) return;
+    pushUndo();
     const cat = data.categories.find(c => c.id === currentCatId);
     const id = Date.now().toString();
     cat.memos.push({ id, title: '', content: '', updatedAt: Date.now(), subcatId: currentSubCatId || null });
@@ -957,6 +950,7 @@
   function deleteMemo() {
     if (!currentMemoId) return;
     if (!confirm('이 메모를 삭제할까요?')) return;
+    pushUndo();
     const cat = data.categories.find(c => c.id === currentCatId);
     cat.memos = cat.memos.filter(m => m.id !== currentMemoId);
     save(); closeModal(); renderCats();
@@ -1003,26 +997,19 @@
     if (e.key === 'Escape' && document.getElementById('modal-overlay').classList.contains('show')) closeModal();
   });
 
-  // 메모카드 Ctrl+C / Ctrl+V 복제
-  let copiedMemo = null;
+  // Ctrl+Z 실행 취소
+  const undoStack = [];
+  function pushUndo() {
+    undoStack.push(JSON.stringify(data.categories));
+    if (undoStack.length > 30) undoStack.shift();
+  }
   document.addEventListener('keydown', e => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
       if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
-      if (!currentCatId) return;
-      const cat = data.categories.find(c => c.id === currentCatId);
-      if (!cat?.memos.length) return;
-      // 가장 최근 수정된 메모 복사
-      copiedMemo = { ...cat.memos[cat.memos.length - 1] };
-      toast('메모 복사됨');
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
-      if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
-      if (!copiedMemo || !currentCatId) return;
-      const cat = data.categories.find(c => c.id === currentCatId);
-      const id = Date.now().toString();
-      cat.memos.push({ ...copiedMemo, id, updatedAt: Date.now(), subcatId: currentSubCatId || null });
-      save(); renderCats(); renderMemos();
-      toast('메모 붙여넣기 됨');
+      if (!undoStack.length) { toast('더 이상 되돌릴 수 없어요'); return; }
+      data.categories = JSON.parse(undoStack.pop());
+      save(); renderCats(); renderSubTabs(); renderMemos();
+      toast('실행 취소됨 ↩');
     }
   });
 
