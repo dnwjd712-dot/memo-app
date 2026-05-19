@@ -826,16 +826,20 @@
       ? cat.memos.map((m, i) => ({ ...m, _i: i })).filter(m => m.subcatId === currentSubCatId)
       : cat.memos.map((m, i) => ({ ...m, _i: i }));
 
-    grid.innerHTML = memos.map((m) => `
-      <div class="memo-card" data-id="${m.id}" data-index="${m._i}">
+    grid.innerHTML = memos.map((m) => {
+      const sub = !currentSubCatId && m.subcatId ? cat.subcats?.find(s => s.id === m.subcatId) : null;
+      const cardStyle = sub ? `style="background:${sub.bgColor||''};color:${sub.textColor||''};border-color:${sub.bgColor||''}"` : '';
+      const editStyle = sub && sub.textColor ? `style="color:${sub.textColor};border-color:${sub.textColor};opacity:0.7"` : '';
+      return `
+      <div class="memo-card" data-id="${m.id}" data-index="${m._i}" ${cardStyle}>
         <span class="memo-card-handle" title="드래그로 위치 변경">⠿</span>
         <div class="memo-card-info">
           <div class="memo-card-title">${esc(m.title || '제목 없음')}</div>
           <div class="memo-card-date">${timeAgo(m.updatedAt)}</div>
         </div>
-        <button class="memo-card-edit" data-id="${m.id}">수정</button>
-      </div>
-    `).join('');
+        <button class="memo-card-edit" data-id="${m.id}" ${editStyle}>수정</button>
+      </div>`;
+    }).join('');
 
     grid.querySelectorAll('.memo-card').forEach(card => {
       // 카드 본문 클릭 → 복사
