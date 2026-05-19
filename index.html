@@ -751,7 +751,7 @@
     bar.innerHTML = `
       <button class="sub-tab ${!currentSubCatId ? 'active' : ''}" data-id="" data-index="-1">전체</button>
       ${subcats.map((s, i) => `
-        <button class="sub-tab ${currentSubCatId === s.id ? 'active' : ''}" data-id="${s.id}" data-index="${i}" style="${s.bgColor ? 'background:'+s.bgColor+';' : ''}${s.textColor ? 'color:'+s.textColor+';' : ''}${s.bgColor && currentSubCatId===s.id ? 'border-bottom-color:'+s.bgColor+';' : ''}">
+        <button class="sub-tab ${currentSubCatId === s.id ? 'active' : ''}" data-id="${s.id}" data-index="${i}" style="${currentSubCatId === s.id ? (s.bgColor ? 'background:'+s.bgColor+';color:#fff;outline:2px solid '+s.bgColor+';' : '') : (s.bgColor ? 'outline:2px solid '+s.bgColor+';outline-offset:-2px;'+(s.textColor?'color:'+s.textColor+';':'') : (s.textColor?'color:'+s.textColor+';':''))}">
           <span class="sub-tab-handle">⠿</span>${esc(s.name)}
         </button>`).join('')}
       <button class="sub-tab-add" id="add-subcat-btn">+ 탭</button>
@@ -827,9 +827,21 @@
       : cat.memos.map((m, i) => ({ ...m, _i: i }));
 
     grid.innerHTML = memos.map((m) => {
-      const sub = !currentSubCatId && m.subcatId ? cat.subcats?.find(s => s.id === m.subcatId) : null;
-      const cardStyle = sub ? `style="background:${sub.bgColor||''};color:${sub.textColor||''};border-color:${sub.bgColor||''}"` : '';
-      const editStyle = sub && sub.textColor ? `style="color:${sub.textColor};border-color:${sub.textColor};opacity:0.7"` : '';
+      const sub = m.subcatId ? cat.subcats?.find(s => s.id === m.subcatId) : null;
+      const isActive = sub && currentSubCatId === sub.id;
+      let cardStyle = '';
+      let editStyle = '';
+      if (sub?.bgColor) {
+        if (isActive) {
+          cardStyle = `style="background:${sub.bgColor};color:#fff;border-color:${sub.bgColor}"`;
+          editStyle = `style="color:#fff;border-color:rgba(255,255,255,0.5);opacity:0.8"`;
+        } else {
+          cardStyle = `style="border-color:${sub.bgColor};${sub.textColor?'color:'+sub.textColor+';':''}"`;
+          editStyle = sub.textColor ? `style="color:${sub.textColor};border-color:${sub.textColor};opacity:0.7"` : '';
+        }
+      } else if (sub?.textColor) {
+        cardStyle = `style="color:${sub.textColor}"`;
+      }
       return `
       <div class="memo-card" data-id="${m.id}" data-index="${m._i}" ${cardStyle}>
         <span class="memo-card-handle" title="드래그로 위치 변경">⠿</span>
