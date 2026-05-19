@@ -148,14 +148,6 @@
     .ctx-item:hover { background: var(--hover); }
     .ctx-item.danger { color: #e53935; }
     .ctx-item.danger:hover { background: #ffeaea; }
-    .ctx-colors {
-      display: flex; gap: 6px; padding: 8px 12px; flex-wrap: wrap;
-    }
-    .ctx-color-btn {
-      width: 20px; height: 20px; border-radius: 50%; border: 2px solid transparent;
-      cursor: pointer; transition: transform 0.1s;
-    }
-    .ctx-color-btn:hover { transform: scale(1.2); border-color: var(--text); }
 
     /* ── 메인 영역 ── */
     #main {
@@ -414,10 +406,10 @@
 </div>
 
 <div id="ctx-menu">
-  <div class="ctx-item" id="ctx-rename">✏️ 이름 변경</div>
-  <div class="ctx-item" id="ctx-color-toggle">🎨 색상 변경</div>
-  <div class="ctx-colors" id="ctx-colors" style="display:none"></div>
-  <div class="ctx-item danger" id="ctx-delete">🗑️ 삭제</div>
+  <div class="ctx-item" id="ctx-rename">이름 변경</div>
+  <div class="ctx-item" id="ctx-color-toggle">색상 변경 <input type="color" id="ctx-color-picker" style="width:20px;height:20px;border:none;padding:0;cursor:pointer;border-radius:4px;" /></div>
+  <div class="ctx-item" id="ctx-color-reset">색상 제거</div>
+  <div class="ctx-item danger" id="ctx-delete">삭제</div>
 </div>
 
 <div id="toast"></div>
@@ -448,20 +440,16 @@
 
   // ── 저장/로드 ──
   // ── 컨텍스트 메뉴 ──
-  const CTX_COLORS = ['#e53935','#e67e22','#f1c40f','#2ecc71','#3498db','#9b59b6','#1abc9c','#e91e63','#607d8b',''];
   const ctxMenu = document.getElementById('ctx-menu');
-  const ctxColors = document.getElementById('ctx-colors');
+  const ctxColorPicker = document.getElementById('ctx-color-picker');
   let ctxCatId = null;
-
-  ctxColors.innerHTML = CTX_COLORS.map(c =>
-    `<div class="ctx-color-btn" data-color="${c}" style="background:${c || 'var(--border)'};" title="${c || '없음'}"></div>`
-  ).join('');
 
   function showCtxMenu(x, y, catId) {
     ctxCatId = catId;
-    document.getElementById('ctx-colors').style.display = 'none';
+    const cat = data.categories.find(c => c.id === catId);
+    if (cat?.color) ctxColorPicker.value = cat.color;
     ctxMenu.classList.add('show');
-    const mw = 160, mh = 150;
+    const mw = 160, mh = 130;
     ctxMenu.style.left = (x + mw > innerWidth ? x - mw : x) + 'px';
     ctxMenu.style.top = (y + mh > innerHeight ? y - mh : y) + 'px';
   }
@@ -472,8 +460,6 @@
   ctxMenu.addEventListener('click', e => e.stopPropagation());
 
   document.getElementById('ctx-rename').addEventListener('click', () => {
-    const cat = data.categories.find(c => c.id === ctxCatId);
-    if (!cat) return;
     const input = document.querySelector(`.cat-name-input[data-id="${ctxCatId}"]`);
     if (input) { input.readOnly = false; input.focus(); input.select(); }
     hideCtxMenu();
@@ -481,18 +467,24 @@
 
   document.getElementById('ctx-color-toggle').addEventListener('click', e => {
     e.stopPropagation();
-    const s = ctxColors.style.display === 'none' ? 'flex' : 'none';
-    ctxColors.style.display = s;
+    ctxColorPicker.click();
   });
 
-  ctxColors.querySelectorAll('.ctx-color-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const cat = data.categories.find(c => c.id === ctxCatId);
-      if (!cat) return;
-      cat.color = btn.dataset.color || null;
-      save(); renderCats();
-      hideCtxMenu();
-    });
+  ctxColorPicker.addEventListener('input', () => {
+    const cat = data.categories.find(c => c.id === ctxCatId);
+    if (!cat) return;
+    cat.color = ctxColorPicker.value;
+    save(); renderCats();
+  });
+
+  ctxColorPicker.addEventListener('change', () => hideCtxMenu());
+
+  document.getElementById('ctx-color-reset').addEventListener('click', () => {
+    const cat = data.categories.find(c => c.id === ctxCatId);
+    if (!cat) return;
+    cat.color = null;
+    save(); renderCats();
+    hideCtxMenu();
   });
 
   document.getElementById('ctx-delete').addEventListener('click', () => {
@@ -552,9 +544,9 @@
       return;
     }
     el.innerHTML = data.categories.map((c, i) => `
-      <div class="cat-item ${c.id === currentCatId ? 'active' : ''}" data-id="${c.id}" data-index="${i}">
+      <div class="cat-item ${c.id === currentCatId ? 'active' : ''}" data-id="${c.id}" data-index="${i}" ${c.id === currentCatId && c.color ? `style="background:${c.color};color:#fff;"` : ''}>
         <span class="cat-drag-handle" title="드래그로 순서 변경">⠿</span>
-        ${c.color ? `<span class="cat-color-dot" style="background:${c.color}"></span>` : ''}
+        ${c.color && c.id !== currentCatId ? `<span class="cat-color-dot" style="background:${c.color}"></span>` : ''}
         <input class="cat-name-input" value="${esc(c.name)}" data-id="${c.id}" readonly />
         <span class="cat-count">${c.memos.length}</span>
       </div>
