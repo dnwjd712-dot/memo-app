@@ -454,7 +454,8 @@
 
 <div id="ctx-menu">
   <div class="ctx-item" id="ctx-rename">이름 변경</div>
-  <div class="ctx-item" id="ctx-color-toggle">색상 변경 <input type="color" id="ctx-color-picker" style="width:20px;height:20px;border:none;padding:0;cursor:pointer;border-radius:4px;" /></div>
+  <div class="ctx-item" id="ctx-color-toggle">배경색 <input type="color" id="ctx-color-picker" style="width:20px;height:20px;border:none;padding:0;cursor:pointer;border-radius:4px;" /></div>
+  <div class="ctx-item" id="ctx-textcolor-toggle" style="display:none">글자색 <input type="color" id="ctx-textcolor-picker" style="width:20px;height:20px;border:none;padding:0;cursor:pointer;border-radius:4px;" /></div>
   <div class="ctx-item" id="ctx-color-reset">색상 제거</div>
   <div class="ctx-item danger" id="ctx-delete">삭제</div>
 </div>
@@ -490,12 +491,15 @@
   // ── 컨텍스트 메뉴 ──
   const ctxMenu = document.getElementById('ctx-menu');
   const ctxColorPicker = document.getElementById('ctx-color-picker');
+  const ctxTextColorPicker = document.getElementById('ctx-textcolor-picker');
+  const ctxTextColorRow = document.getElementById('ctx-textcolor-toggle');
   let ctxCatId = null;
 
   function showCtxMenu(x, y, catId) {
     ctxCatId = catId;
     const cat = data.categories.find(c => c.id === catId);
     if (cat?.color) ctxColorPicker.value = cat.color;
+    ctxTextColorRow.style.display = 'none';
     ctxMenu.classList.add('show');
     const mw = 160, mh = 130;
     ctxMenu.style.left = (x + mw > innerWidth ? x - mw : x) + 'px';
@@ -531,7 +535,7 @@
     if (subCtxSubId) {
       const cat = data.categories.find(c => c.id === subCtxCatId);
       const sub = cat?.subcats?.find(s => s.id === subCtxSubId);
-      if (sub) { sub.color = ctxColorPicker.value; save(); renderSubTabs(); }
+      if (sub) { sub.bgColor = ctxColorPicker.value; save(); renderSubTabs(); }
       return;
     }
     const cat = data.categories.find(c => c.id === ctxCatId);
@@ -540,13 +544,26 @@
     save(); renderCats();
   });
 
-  ctxColorPicker.addEventListener('change', () => { subCtxSubId = null; hideCtxMenu(); });
+  ctxColorPicker.addEventListener('change', () => { if (!subCtxSubId) { subCtxSubId = null; hideCtxMenu(); } });
+
+  ctxTextColorPicker.addEventListener('input', () => {
+    if (!subCtxSubId) return;
+    const cat = data.categories.find(c => c.id === subCtxCatId);
+    const sub = cat?.subcats?.find(s => s.id === subCtxSubId);
+    if (sub) { sub.textColor = ctxTextColorPicker.value; save(); renderSubTabs(); }
+  });
+  ctxTextColorPicker.addEventListener('change', () => hideCtxMenu());
+
+  document.getElementById('ctx-textcolor-toggle').addEventListener('click', e => {
+    e.stopPropagation();
+    ctxTextColorPicker.click();
+  });
 
   document.getElementById('ctx-color-reset').addEventListener('click', () => {
     if (subCtxSubId) {
       const cat = data.categories.find(c => c.id === subCtxCatId);
       const sub = cat?.subcats?.find(s => s.id === subCtxSubId);
-      if (sub) { sub.color = null; save(); renderSubTabs(); }
+      if (sub) { sub.bgColor = null; sub.textColor = null; save(); renderSubTabs(); }
       subCtxSubId = null; hideCtxMenu(); return;
     }
     const cat = data.categories.find(c => c.id === ctxCatId);
@@ -690,10 +707,12 @@
     subCtxCatId = catId; subCtxSubId = subId;
     const cat = data.categories.find(c => c.id === catId);
     const sub = cat?.subcats?.find(s => s.id === subId);
-    if (sub?.color) ctxColorPicker.value = sub.color;
+    if (sub?.bgColor) ctxColorPicker.value = sub.bgColor;
+    if (sub?.textColor) ctxTextColorPicker.value = sub.textColor;
+    ctxTextColorRow.style.display = 'flex';
     ctxCatId = null;
     ctxMenu.classList.add('show');
-    const mw = 160, mh = 130;
+    const mw = 160, mh = 150;
     ctxMenu.style.left = (x + mw > innerWidth ? x - mw : x) + 'px';
     ctxMenu.style.top = (y + mh > innerHeight ? y - mh : y) + 'px';
   }
@@ -710,7 +729,7 @@
     bar.innerHTML = `
       <button class="sub-tab ${!currentSubCatId ? 'active' : ''}" data-id="" data-index="-1">전체</button>
       ${subcats.map((s, i) => `
-        <button class="sub-tab ${currentSubCatId === s.id ? 'active' : ''}" data-id="${s.id}" data-index="${i}" ${s.color ? `style="color:${currentSubCatId===s.id?'#fff':s.color};${currentSubCatId===s.id?'border-bottom-color:'+s.color+';background:'+s.color+';':''}"` : ''}>
+        <button class="sub-tab ${currentSubCatId === s.id ? 'active' : ''}" data-id="${s.id}" data-index="${i}" style="${s.bgColor ? 'background:'+s.bgColor+';' : ''}${s.textColor ? 'color:'+s.textColor+';' : ''}${s.bgColor && currentSubCatId===s.id ? 'border-bottom-color:'+s.bgColor+';' : ''}">
           <span class="sub-tab-handle">⠿</span>${esc(s.name)}
         </button>`).join('')}
       <button class="sub-tab-add" id="add-subcat-btn">+ 탭</button>
