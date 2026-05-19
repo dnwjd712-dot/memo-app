@@ -352,8 +352,8 @@
     #sub-tab-bar {
       display: none;
       align-items: center;
-      gap: 4px;
-      padding: 6px 18px;
+      gap: 2px;
+      padding: 0 14px;
       border-bottom: 1px solid var(--border);
       background: var(--panel);
       overflow-x: auto;
@@ -362,30 +362,37 @@
     #sub-tab-bar::-webkit-scrollbar { height: 0; }
     #sub-tab-bar.show { display: flex; }
     .sub-tab {
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 12px;
+      display: flex; align-items: center; gap: 4px;
+      padding: 8px 12px;
+      font-size: 12px; font-weight: 500;
       cursor: pointer;
       white-space: nowrap;
-      border: 1px solid var(--border);
+      border: none; border-bottom: 2px solid transparent;
       background: transparent;
       color: var(--sub);
       transition: all 0.12s;
+      position: relative;
     }
-    .sub-tab:hover { background: var(--hover); color: var(--text); }
-    .sub-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .sub-tab:hover { color: var(--text); background: var(--hover); }
+    .sub-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .sub-tab.drag-over { background: var(--hover); outline: 2px dashed var(--accent); outline-offset: -2px; border-radius: 4px; }
+    .sub-tab.dragging { opacity: 0.35; }
+    .sub-tab-handle {
+      font-size: 11px; color: var(--sub); cursor: grab;
+      opacity: 0; transition: opacity 0.1s;
+    }
+    .sub-tab:hover .sub-tab-handle { opacity: 1; }
     .sub-tab-add {
-      padding: 4px 10px;
-      border-radius: 20px;
+      padding: 6px 10px;
       font-size: 12px;
       cursor: pointer;
-      border: 1px dashed var(--border);
+      border: none; border-bottom: 2px solid transparent;
       background: transparent;
       color: var(--sub);
       transition: all 0.12s;
       flex-shrink: 0;
     }
-    .sub-tab-add:hover { border-color: var(--accent); color: var(--accent); }
+    .sub-tab-add:hover { color: var(--accent); }
 
     #toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--text); color: var(--panel); padding: 8px 16px; border-radius: 18px; font-size: 12px; font-weight: 500; opacity: 0; pointer-events: none; transition: opacity 0.18s, transform 0.18s; z-index: 999; }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -501,6 +508,15 @@
   ctxMenu.addEventListener('click', e => e.stopPropagation());
 
   document.getElementById('ctx-rename').addEventListener('click', () => {
+    if (subCtxSubId) {
+      const cat = data.categories.find(c => c.id === subCtxCatId);
+      const sub = cat?.subcats?.find(s => s.id === subCtxSubId);
+      if (sub) {
+        const name = prompt('탭 이름 변경', sub.name);
+        if (name?.trim()) { sub.name = name.trim(); save(); renderSubTabs(); }
+      }
+      subCtxSubId = null; hideCtxMenu(); return;
+    }
     const input = document.querySelector(`.cat-name-input[data-id="${ctxCatId}"]`);
     if (input) { input.readOnly = false; input.focus(); input.select(); }
     hideCtxMenu();
@@ -512,15 +528,27 @@
   });
 
   ctxColorPicker.addEventListener('input', () => {
+    if (subCtxSubId) {
+      const cat = data.categories.find(c => c.id === subCtxCatId);
+      const sub = cat?.subcats?.find(s => s.id === subCtxSubId);
+      if (sub) { sub.color = ctxColorPicker.value; save(); renderSubTabs(); }
+      return;
+    }
     const cat = data.categories.find(c => c.id === ctxCatId);
     if (!cat) return;
     cat.color = ctxColorPicker.value;
     save(); renderCats();
   });
 
-  ctxColorPicker.addEventListener('change', () => hideCtxMenu());
+  ctxColorPicker.addEventListener('change', () => { subCtxSubId = null; hideCtxMenu(); });
 
   document.getElementById('ctx-color-reset').addEventListener('click', () => {
+    if (subCtxSubId) {
+      const cat = data.categories.find(c => c.id === subCtxCatId);
+      const sub = cat?.subcats?.find(s => s.id === subCtxSubId);
+      if (sub) { sub.color = null; save(); renderSubTabs(); }
+      subCtxSubId = null; hideCtxMenu(); return;
+    }
     const cat = data.categories.find(c => c.id === ctxCatId);
     if (!cat) return;
     cat.color = null;
@@ -529,6 +557,17 @@
   });
 
   document.getElementById('ctx-delete').addEventListener('click', () => {
+    if (subCtxSubId) {
+      const cat = data.categories.find(c => c.id === subCtxCatId);
+      const sub = cat?.subcats?.find(s => s.id === subCtxSubId);
+      if (sub && confirm(`"${sub.name}" 탭 삭제할까요?`)) {
+        cat.subcats = cat.subcats.filter(s => s.id !== subCtxSubId);
+        cat.memos.forEach(m => { if (m.subcatId === subCtxSubId) m.subcatId = null; });
+        if (currentSubCatId === subCtxSubId) currentSubCatId = null;
+        save(); renderSubTabs(); renderMemos();
+      }
+      subCtxSubId = null; hideCtxMenu(); return;
+    }
     const cat = data.categories.find(c => c.id === ctxCatId);
     if (!cat) return;
     if (confirm(`"${cat.name}" 삭제할까요?\n(메모 ${cat.memos.length}개 포함)`)) {
@@ -643,6 +682,22 @@
     });
   }
 
+  // ── 서브탭 컨텍스트 메뉴 ──
+  let subCtxCatId = null;
+  let subCtxSubId = null;
+
+  function showSubCtxMenu(x, y, catId, subId) {
+    subCtxCatId = catId; subCtxSubId = subId;
+    const cat = data.categories.find(c => c.id === catId);
+    const sub = cat?.subcats?.find(s => s.id === subId);
+    if (sub?.color) ctxColorPicker.value = sub.color;
+    ctxCatId = null;
+    ctxMenu.classList.add('show');
+    const mw = 160, mh = 130;
+    ctxMenu.style.left = (x + mw > innerWidth ? x - mw : x) + 'px';
+    ctxMenu.style.top = (y + mh > innerHeight ? y - mh : y) + 'px';
+  }
+
   // ── 서브탭 렌더 ──
   function renderSubTabs() {
     const bar = document.getElementById('sub-tab-bar');
@@ -653,28 +708,49 @@
     bar.classList.add('show');
 
     bar.innerHTML = `
-      <button class="sub-tab ${!currentSubCatId ? 'active' : ''}" data-id="">전체</button>
-      ${subcats.map(s => `<button class="sub-tab ${currentSubCatId === s.id ? 'active' : ''}" data-id="${s.id}">${esc(s.name)}</button>`).join('')}
+      <button class="sub-tab ${!currentSubCatId ? 'active' : ''}" data-id="" data-index="-1">전체</button>
+      ${subcats.map((s, i) => `
+        <button class="sub-tab ${currentSubCatId === s.id ? 'active' : ''}" data-id="${s.id}" data-index="${i}" ${s.color ? `style="color:${currentSubCatId===s.id?'#fff':s.color};${currentSubCatId===s.id?'border-bottom-color:'+s.color+';background:'+s.color+';':''}"` : ''}>
+          <span class="sub-tab-handle">⠿</span>${esc(s.name)}
+        </button>`).join('')}
       <button class="sub-tab-add" id="add-subcat-btn">+ 탭</button>
     `;
 
     bar.querySelectorAll('.sub-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
+      tab.addEventListener('click', e => {
+        if (e.target.classList.contains('sub-tab-handle')) return;
         currentSubCatId = tab.dataset.id || null;
-        renderSubTabs();
-        renderMemos();
+        renderSubTabs(); renderMemos();
       });
+
+      if (!tab.dataset.id) return;
+
+      // 드래그 (핸들로만)
+      const handle = tab.querySelector('.sub-tab-handle');
+      if (handle) {
+        handle.addEventListener('mousedown', () => { tab.draggable = true; });
+        tab.addEventListener('dragend', () => { tab.draggable = false; tab.classList.remove('dragging'); });
+        tab.addEventListener('dragstart', e => {
+          e.dataTransfer.setData('sub-index', tab.dataset.index);
+          setTimeout(() => tab.classList.add('dragging'), 0);
+        });
+        tab.addEventListener('dragover', e => { e.preventDefault(); tab.classList.add('drag-over'); });
+        tab.addEventListener('dragleave', () => tab.classList.remove('drag-over'));
+        tab.addEventListener('drop', e => {
+          e.preventDefault(); tab.classList.remove('drag-over');
+          const from = parseInt(e.dataTransfer.getData('sub-index'));
+          const to = parseInt(tab.dataset.index);
+          if (from === to || isNaN(from) || isNaN(to)) return;
+          const moved = cat.subcats.splice(from, 1)[0];
+          cat.subcats.splice(to, 0, moved);
+          save(); renderSubTabs();
+        });
+      }
+
+      // 우클릭
       tab.addEventListener('contextmenu', e => {
         e.preventDefault();
-        if (!tab.dataset.id) return;
-        const s = subcats.find(s => s.id === tab.dataset.id);
-        if (!s) return;
-        if (confirm(`"${s.name}" 탭 삭제할까요?`)) {
-          cat.subcats = cat.subcats.filter(sc => sc.id !== s.id);
-          cat.memos.forEach(m => { if (m.subcatId === s.id) m.subcatId = null; });
-          if (currentSubCatId === s.id) currentSubCatId = null;
-          save(); renderSubTabs(); renderMemos();
-        }
+        showSubCtxMenu(e.clientX, e.clientY, currentCatId, tab.dataset.id);
       });
     });
 
