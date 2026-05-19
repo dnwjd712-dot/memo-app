@@ -457,6 +457,7 @@
   <div class="ctx-item" id="ctx-rename">이름 변경</div>
   <div class="ctx-item" id="ctx-color-toggle">배경색 <input type="color" id="ctx-color-picker" style="width:20px;height:20px;border:none;padding:0;cursor:pointer;border-radius:4px;" /></div>
   <div class="ctx-item" id="ctx-textcolor-toggle" style="display:none">글자색 <input type="color" id="ctx-textcolor-picker" style="width:20px;height:20px;border:none;padding:0;cursor:pointer;border-radius:4px;" /></div>
+  <div class="ctx-item" id="ctx-duplicate" style="display:none">복제</div>
   <div class="ctx-item" id="ctx-color-reset">색상 제거</div>
   <div class="ctx-item danger" id="ctx-delete">삭제</div>
 </div>
@@ -501,6 +502,7 @@
     const cat = data.categories.find(c => c.id === catId);
     if (cat?.color) ctxColorPicker.value = cat.color;
     ctxTextColorRow.style.display = 'none';
+    document.getElementById('ctx-duplicate').style.display = 'none';
     ctxMenu.classList.add('show');
     const mw = 160, mh = 130;
     ctxMenu.style.left = (x + mw > innerWidth ? x - mw : x) + 'px';
@@ -572,6 +574,24 @@
     cat.color = null;
     save(); renderCats();
     hideCtxMenu();
+  });
+
+  document.getElementById('ctx-duplicate').addEventListener('click', () => {
+    if (!subCtxSubId) return;
+    const cat = data.categories.find(c => c.id === subCtxCatId);
+    const sub = cat?.subcats?.find(s => s.id === subCtxSubId);
+    if (!sub) return;
+    const newId = Date.now().toString();
+    const newSub = { ...sub, id: newId, name: sub.name + ' 복사' };
+    cat.subcats.push(newSub);
+    const newMemos = cat.memos
+      .filter(m => m.subcatId === subCtxSubId)
+      .map(m => ({ ...m, id: Date.now().toString() + Math.random(), subcatId: newId, updatedAt: Date.now() }));
+    cat.memos.push(...newMemos);
+    currentSubCatId = newId;
+    save(); renderSubTabs(); renderMemos();
+    toast('서브탭 복제됨');
+    subCtxSubId = null; hideCtxMenu();
   });
 
   document.getElementById('ctx-delete').addEventListener('click', () => {
@@ -711,6 +731,7 @@
     if (sub?.bgColor) ctxColorPicker.value = sub.bgColor;
     if (sub?.textColor) ctxTextColorPicker.value = sub.textColor;
     ctxTextColorRow.style.display = 'flex';
+    document.getElementById('ctx-duplicate').style.display = 'flex';
     ctxCatId = null;
     ctxMenu.classList.add('show');
     const mw = 160, mh = 150;
@@ -828,15 +849,24 @@
         openModal(card.dataset.id);
       });
 
-      // 우클릭 → 삭제
+      // 우클릭 → 복제 or 삭제
       card.addEventListener('contextmenu', e => {
         e.preventDefault();
         const cat = data.categories.find(c => c.id === currentCatId);
         const memo = cat?.memos.find(m => m.id === card.dataset.id);
         if (!memo) return;
-        if (confirm(`"${memo.title || '제목 없음'}" 메모를 삭제할까요?`)) {
-          cat.memos = cat.memos.filter(m => m.id !== card.dataset.id);
+        const action = confirm(`"${memo.title || '제목 없음'}"\n\n확인 = 복제 / 취소 = 삭제`);
+        if (action) {
+          const id = Date.now().toString();
+          const idx = cat.memos.findIndex(m => m.id === card.dataset.id);
+          cat.memos.splice(idx + 1, 0, { ...memo, id, updatedAt: Date.now() });
           save(); renderCats(); renderMemos();
+          toast('메모 복제됨');
+        } else {
+          if (confirm(`"${memo.title || '제목 없음'}" 메모를 삭제할까요?`)) {
+            cat.memos = cat.memos.filter(m => m.id !== card.dataset.id);
+            save(); renderCats(); renderMemos();
+          }
         }
       });
 
@@ -891,7 +921,7 @@
     if (!currentCatId) return;
     const cat = data.categories.find(c => c.id === currentCatId);
     const id = Date.now().toString();
-    cat.memos.unshift({ id, title: '', content: '', updatedAt: Date.now(), subcatId: currentSubCatId || null });
+    cat.memos.push({ id, title: '', content: '', updatedAt: Date.now(), subcatId: currentSubCatId || null });
     save(); renderCats(); renderMemos();
     openModal(id);
     setTimeout(() => document.getElementById('modal-title').focus(), 50);
@@ -967,6 +997,34 @@
   document.getElementById('modal-delete-btn').addEventListener('click', deleteMemo);
   document.getElementById('modal-close-btn').addEventListener('click', closeModal);
   document.getElementById('modal-overlay').addEventListener('click', e => { if (e.target === document.getElementById('modal-overlay')) closeModal(); });
+
+  // ESC로 모달 닫기
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && document.getElementById('modal-overlay').classList.contains('show')) closeModal();
+  });
+
+  // 메모카드 Ctrl+C / Ctrl+V 복제
+  let copiedMemo = null;
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+      if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+      if (!currentCatId) return;
+      const cat = data.categories.find(c => c.id === currentCatId);
+      if (!cat?.memos.length) return;
+      // 가장 최근 수정된 메모 복사
+      copiedMemo = { ...cat.memos[cat.memos.length - 1] };
+      toast('메모 복사됨');
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+      if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+      if (!copiedMemo || !currentCatId) return;
+      const cat = data.categories.find(c => c.id === currentCatId);
+      const id = Date.now().toString();
+      cat.memos.push({ ...copiedMemo, id, updatedAt: Date.now(), subcatId: currentSubCatId || null });
+      save(); renderCats(); renderMemos();
+      toast('메모 붙여넣기 됨');
+    }
+  });
 
   // ── 내보내기 / 가져오기 ──
   document.getElementById('export-btn').addEventListener('click', () => {
