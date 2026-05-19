@@ -352,14 +352,13 @@
     #sub-tab-bar {
       display: none;
       align-items: center;
+      flex-wrap: wrap;
       gap: 2px;
-      padding: 0 14px;
+      padding: 4px 14px;
       border-bottom: 1px solid var(--border);
       background: var(--panel);
-      overflow-x: auto;
       flex-shrink: 0;
     }
-    #sub-tab-bar::-webkit-scrollbar { height: 0; }
     #sub-tab-bar.show { display: flex; }
     .sub-tab {
       display: flex; align-items: center; justify-content: center; gap: 4px;
@@ -578,6 +577,7 @@
 
   document.getElementById('ctx-duplicate').addEventListener('click', () => {
     if (!subCtxSubId) return;
+    pushUndo();
     const cat = data.categories.find(c => c.id === subCtxCatId);
     const sub = cat?.subcats?.find(s => s.id === subCtxSubId);
     if (!sub) return;
@@ -599,6 +599,7 @@
       const cat = data.categories.find(c => c.id === subCtxCatId);
       const sub = cat?.subcats?.find(s => s.id === subCtxSubId);
       if (sub && confirm(`"${sub.name}" 탭 삭제할까요?`)) {
+        pushUndo();
         cat.subcats = cat.subcats.filter(s => s.id !== subCtxSubId);
         cat.memos.forEach(m => { if (m.subcatId === subCtxSubId) m.subcatId = null; });
         if (currentSubCatId === subCtxSubId) currentSubCatId = null;
@@ -798,6 +799,7 @@
     document.getElementById('add-subcat-btn')?.addEventListener('click', () => {
       const name = prompt('탭 이름을 입력하세요');
       if (!name?.trim()) return;
+      pushUndo();
       if (!cat.subcats) cat.subcats = [];
       const id = Date.now().toString();
       cat.subcats.push({ id, name: name.trim() });
