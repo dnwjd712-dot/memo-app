@@ -282,7 +282,7 @@
     #modal-overlay.show { display: flex; }
     #modal {
       background: var(--panel); border-radius: 14px;
-      width: 460px; max-width: 90vw; max-height: 65vh;
+      width: 620px; max-width: 92vw; max-height: 80vh;
       display: flex; flex-direction: column;
       box-shadow: 0 8px 40px rgba(0,0,0,0.15); overflow: hidden;
     }
@@ -307,7 +307,7 @@
     #modal-body {
       flex: 1; padding: 12px 14px; font-size: 13px; line-height: 1.8;
       border: none; background: transparent; color: var(--text);
-      resize: none; outline: none; font-family: inherit; min-height: 140px;
+      resize: none; outline: none; font-family: inherit; min-height: 260px;
     }
     #modal-body::placeholder { color: var(--sub); }
 
@@ -825,6 +825,18 @@
       card.querySelector('.memo-card-edit').addEventListener('click', e => {
         e.stopPropagation();
         openModal(card.dataset.id);
+      });
+
+      // 우클릭 → 삭제
+      card.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        const cat = data.categories.find(c => c.id === currentCatId);
+        const memo = cat?.memos.find(m => m.id === card.dataset.id);
+        if (!memo) return;
+        if (confirm(`"${memo.title || '제목 없음'}" 메모를 삭제할까요?`)) {
+          cat.memos = cat.memos.filter(m => m.id !== card.dataset.id);
+          save(); renderCats(); renderMemos();
+        }
       });
 
       // 핸들 mousedown 시에만 draggable 활성화
