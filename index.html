@@ -828,17 +828,11 @@
 
     grid.innerHTML = memos.map((m) => {
       const sub = m.subcatId ? cat.subcats?.find(s => s.id === m.subcatId) : null;
-      const isActive = sub && currentSubCatId === sub.id;
       let cardStyle = '';
       let editStyle = '';
       if (sub?.bgColor) {
-        if (isActive) {
-          cardStyle = `style="background:${sub.bgColor};color:#fff;border-color:${sub.bgColor}"`;
-          editStyle = `style="color:#fff;border-color:rgba(255,255,255,0.5);opacity:0.8"`;
-        } else {
-          cardStyle = `style="border-color:${sub.bgColor};${sub.textColor?'color:'+sub.textColor+';':''}"`;
-          editStyle = sub.textColor ? `style="color:${sub.textColor};border-color:${sub.textColor};opacity:0.7"` : '';
-        }
+        cardStyle = `style="border-color:${sub.bgColor};${sub.textColor?'color:'+sub.textColor+';':''}"`;
+        editStyle = sub.textColor ? `style="color:${sub.textColor};border-color:${sub.textColor};opacity:0.7"` : '';
       } else if (sub?.textColor) {
         cardStyle = `style="color:${sub.textColor}"`;
       }
