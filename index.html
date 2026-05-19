@@ -703,7 +703,7 @@
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = ev => {
+    reader.onload = async ev => {
       try {
         const imported = JSON.parse(ev.target.result);
         if (!imported.categories) throw new Error();
