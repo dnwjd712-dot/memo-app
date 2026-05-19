@@ -856,7 +856,27 @@
     grid.querySelectorAll('.memo-card').forEach(card => {
       // 카드 본문 클릭 → 복사
       card.querySelector('.memo-card-info').addEventListener('click', () => {
-        if (autoCopy) copyMemo(card.dataset.id);
+        if (autoCopy) {
+          copyMemo(card.dataset.id);
+          const sub = card.style.borderColor;
+          if (sub) {
+            card.style.transition = 'background 0.1s';
+            card.style.background = card.style.borderColor;
+            card.style.color = '#fff';
+            setTimeout(() => {
+              card.style.background = '';
+              card.style.color = '';
+            }, 400);
+          } else {
+            card.style.transition = 'background 0.1s';
+            card.style.background = 'var(--accent)';
+            card.style.color = '#fff';
+            setTimeout(() => {
+              card.style.background = '';
+              card.style.color = '';
+            }, 400);
+          }
+        }
       });
 
       // 수정 버튼 클릭 → 모달
