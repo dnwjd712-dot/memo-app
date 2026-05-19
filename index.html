@@ -456,7 +456,7 @@
       return;
     }
     el.innerHTML = data.categories.map((c, i) => `
-      <div class="cat-item ${c.id === currentCatId ? 'active' : ''}" data-id="${c.id}" data-index="${i}" draggable="true">
+      <div class="cat-item ${c.id === currentCatId ? 'active' : ''}" data-id="${c.id}" data-index="${i}">
         <span class="cat-drag-handle" title="드래그로 순서 변경">⠿</span>
         <input class="cat-name-input" value="${esc(c.name)}" data-id="${c.id}" readonly />
         <span class="cat-count">${c.memos.length}</span>
@@ -469,12 +469,17 @@
         if (e.target.classList.contains('cat-name-input') && !e.target.readOnly) return;
         selectCat(item.dataset.id);
       });
+      // 핸들 mousedown 시에만 draggable 활성화
+      const catHandle = item.querySelector('.cat-drag-handle');
+      catHandle.addEventListener('mousedown', () => { item.draggable = true; });
+      item.addEventListener('dragend', () => { item.draggable = false; item.classList.remove('dragging'); });
+
       // 드래그 순서 변경
       item.addEventListener('dragstart', e => {
         e.dataTransfer.setData('cat-index', item.dataset.index);
         item.classList.add('dragging');
       });
-      item.addEventListener('dragend', () => item.classList.remove('dragging'));
+      item.addEventListener('dragend', () => { item.draggable = false; item.classList.remove('dragging'); });
       item.addEventListener('dragover', e => { e.preventDefault(); item.classList.add('drag-over'); });
       item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
       item.addEventListener('drop', e => {
