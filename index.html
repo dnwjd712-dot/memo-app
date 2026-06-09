@@ -511,6 +511,7 @@
       flex-direction: column;
       flex: 1;
       overflow: hidden;
+      position: relative;
     }
     #schedule-view.show { display: flex; }
 
@@ -557,6 +558,7 @@
       flex: 1;
       overflow: auto;
       padding: 16px;
+      user-select: none;
     }
     #schedule-grid-wrap::-webkit-scrollbar { width: 4px; height: 4px; }
     #schedule-grid-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
@@ -572,38 +574,41 @@
 
     #schedule-table {
       border-collapse: collapse;
-      width: 100%;
       font-size: 12px;
+      min-width: 100%;
     }
     #schedule-table th {
-      padding: 8px 10px;
+      padding: 6px 4px;
       text-align: center;
       font-weight: 600;
-      font-size: 12px;
+      font-size: 11px;
       color: var(--sub);
       border-bottom: 2px solid var(--border);
       background: var(--panel);
       white-space: nowrap;
-      min-width: 100px;
-    }
-    #schedule-table th:first-child {
-      text-align: left;
-      min-width: 80px;
+      min-width: 52px;
       position: sticky;
-      left: 0;
-      background: var(--panel);
+      top: 0;
       z-index: 2;
     }
+    #schedule-table th.name-col {
+      text-align: left;
+      min-width: 80px;
+      left: 0;
+      z-index: 3;
+      padding: 6px 12px;
+    }
     #schedule-table th.today-col { color: var(--accent); }
-    #schedule-table th .th-day { font-size: 11px; }
-    #schedule-table th .th-date { font-size: 14px; font-weight: 700; margin-top: 1px; }
+    #schedule-table th.weekend-col { color: #e53935; }
+    #schedule-table th .th-day { font-size: 10px; }
+    #schedule-table th .th-date { font-size: 13px; font-weight: 700; margin-top: 1px; }
 
     #schedule-table td {
       border: 1px solid var(--border);
-      padding: 4px;
+      padding: 3px;
       vertical-align: middle;
     }
-    #schedule-table td:first-child {
+    #schedule-table td.worker-name-cell {
       padding: 8px 12px;
       font-weight: 600;
       font-size: 13px;
@@ -614,40 +619,96 @@
       white-space: nowrap;
       border-left: none;
     }
-    #schedule-table tr:hover td:first-child { background: var(--hover); }
+    #schedule-table td.weekend-td { background: rgba(0,0,0,0.015); }
+    body.dark #schedule-table td.weekend-td { background: rgba(255,255,255,0.02); }
+    #schedule-table tr:hover td.worker-name-cell { background: var(--hover); }
 
     .shift-cell {
-      min-height: 42px;
-      border-radius: 7px;
-      padding: 6px 8px;
+      min-height: 38px;
+      min-width: 46px;
+      border-radius: 6px;
+      padding: 4px 4px;
       cursor: pointer;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      gap: 2px;
-      transition: opacity 0.12s, transform 0.1s;
+      gap: 1px;
+      transition: opacity 0.1s;
       border: 1.5px dashed var(--border);
       background: transparent;
     }
-    .shift-cell:hover { opacity: 0.75; transform: scale(0.97); }
+    .shift-cell:hover { opacity: 0.7; }
     .shift-cell.has-shift { border-style: solid; }
+    .shift-cell.selected {
+      outline: 2.5px solid var(--accent);
+      outline-offset: -2px;
+      box-shadow: 0 0 0 3px rgba(91,80,232,0.18);
+    }
 
     .shift-type-label {
       font-size: 11px;
       font-weight: 700;
-      letter-spacing: 0.3px;
-    }
-    .shift-time-label {
-      font-size: 10px;
-      opacity: 0.8;
+      letter-spacing: 0.2px;
     }
     .shift-empty-plus {
-      font-size: 16px;
+      font-size: 14px;
       color: var(--border);
       line-height: 1;
+      transition: color 0.1s;
     }
     .shift-cell:hover .shift-empty-plus { color: var(--accent); }
+
+    /* ── 선택 액션 바 ── */
+    #shift-action-bar {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      padding: 10px 16px;
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.06);
+    }
+    #shift-action-bar.show { display: flex; }
+    #action-count {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      white-space: nowrap;
+      min-width: 50px;
+    }
+    .action-sep { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
+    .action-type-chip {
+      padding: 5px 10px;
+      border-radius: 6px;
+      border: none;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.1s, transform 0.1s;
+      font-family: inherit;
+    }
+    .action-type-chip:hover { opacity: 0.75; transform: scale(0.95); }
+    .action-btn {
+      padding: 5px 11px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.1s;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+    .action-btn:hover:not(:disabled) { background: var(--hover); }
+    .action-btn:disabled { opacity: 0.35; cursor: default; }
+    .action-btn.danger { color: #e53935; }
+    .action-btn.danger:hover:not(:disabled) { background: #fff0f0; border-color: #e53935; }
+    body.dark .action-btn.danger:hover:not(:disabled) { background: #2a1010; }
 
     /* ── 근무 등록 모달 ── */
     #shift-modal-overlay {
@@ -799,14 +860,26 @@
   <!-- 시간표 뷰 -->
   <div id="schedule-view">
     <div id="schedule-nav">
-      <button class="nav-btn" id="prev-week-btn">‹</button>
+      <button class="nav-btn" id="prev-month-btn">‹</button>
       <span id="week-label"></span>
-      <button class="nav-btn" id="next-week-btn">›</button>
-      <button id="today-btn">오늘</button>
+      <button class="nav-btn" id="next-month-btn">›</button>
+      <button id="today-btn">이번 달</button>
     </div>
     <div id="schedule-grid-wrap">
       <div id="no-worker-msg" style="display:none;">좌측에서 근무자를 추가하세요</div>
       <table id="schedule-table"></table>
+    </div>
+    <div id="shift-action-bar">
+      <span id="action-count"></span>
+      <div class="action-sep"></div>
+      <div id="action-type-chips"></div>
+      <div class="action-sep"></div>
+      <button class="action-btn" id="action-copy-btn">복사</button>
+      <button class="action-btn" id="action-paste-btn">붙여넣기</button>
+      <div class="action-sep"></div>
+      <button class="action-btn" id="action-time-btn">시간 수정</button>
+      <button class="action-btn danger" id="action-clear-btn">초기화</button>
+      <button class="action-btn" id="action-cancel-btn">✕ 취소</button>
     </div>
   </div>
 </div>
@@ -929,8 +1002,13 @@
   ];
 
   let scheduleData = { workers: [], shifts: {} };
-  let currentWeekStart = getMonday(new Date());
+  let currentMonth = (() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); })();
   let scheduleSaveTimer = null;
+
+  // 선택 상태
+  let selectedCells = new Set(); // "workerId|date"
+  let copiedShift = null;
+  let isDragSelecting = false;
 
   // 근무 모달 상태
   let shiftWorkerId = null;
@@ -948,32 +1026,15 @@
     setTimeout(() => t.classList.remove('show'), 1800);
   }
 
-  function getMonday(d) {
-    const date = new Date(d);
-    const day = date.getDay();
-    const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-    date.setDate(diff);
-    date.setHours(0, 0, 0, 0);
-    return date;
-  }
-
-  function addDays(d, n) {
-    const date = new Date(d);
-    date.setDate(date.getDate() + n);
-    return date;
-  }
-
   function formatDate(d) {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
 
-  function isToday(d) {
-    const t = new Date();
-    return d.getFullYear() === t.getFullYear() && d.getMonth() === t.getMonth() && d.getDate() === t.getDate();
+  function getDaysInMonth(year, month) {
+    return new Date(year, month + 1, 0).getDate();
   }
+
+  function getCellKey(wId, date) { return `${wId}|${date}`; }
 
   // ════════════════════════════════════════
   //  모드 전환
@@ -990,8 +1051,8 @@
     document.getElementById('schedule-view').classList.toggle('show', appMode === 'schedule');
 
     if (appMode === 'schedule') {
-      renderWeekLabel();
       renderScheduleGrid();
+      updateSelectionUI();
     }
   }
 
@@ -1019,12 +1080,8 @@
     } else {
       scheduleData = { workers: [], shifts: {} };
     }
-    if (appMode === 'schedule') {
-      renderWorkers();
-      renderScheduleGrid();
-    } else {
-      renderWorkers();
-    }
+    renderWorkers();
+    if (appMode === 'schedule') { renderScheduleGrid(); updateSelectionUI(); }
   });
 
   // ════════════════════════════════════════
@@ -1079,66 +1136,64 @@
   });
 
   // ════════════════════════════════════════
-  //  시간표: 그리드 렌더
+  //  시간표: 그리드 렌더 (월간)
   // ════════════════════════════════════════
-  const DAYS = ['월', '화', '수', '목', '금', '토', '일'];
+  const DAY_NAMES = ['일','월','화','수','목','금','토'];
 
-  function renderWeekLabel() {
-    const end = addDays(currentWeekStart, 6);
-    const s = currentWeekStart;
-    const label = `${s.getFullYear()}년 ${s.getMonth()+1}월 ${s.getDate()}일 ~ ${end.getMonth()+1}월 ${end.getDate()}일`;
-    document.getElementById('week-label').textContent = label;
+  function renderMonthLabel() {
+    const y = currentMonth.getFullYear(), m = currentMonth.getMonth() + 1;
+    document.getElementById('week-label').textContent = `${y}년 ${m}월`;
   }
 
   function renderScheduleGrid() {
-    renderWeekLabel();
+    renderMonthLabel();
     const noMsg = document.getElementById('no-worker-msg');
     const table = document.getElementById('schedule-table');
 
     if (!scheduleData.workers.length) {
-      noMsg.style.display = 'flex';
-      table.style.display = 'none';
-      return;
+      noMsg.style.display = 'flex'; table.style.display = 'none'; return;
     }
-    noMsg.style.display = 'none';
-    table.style.display = '';
+    noMsg.style.display = 'none'; table.style.display = '';
 
-    const dates = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
+    const y = currentMonth.getFullYear(), mo = currentMonth.getMonth();
+    const days = getDaysInMonth(y, mo);
+    const todayStr = formatDate(new Date());
 
-    // 헤더
-    const headerCells = dates.map((d, i) => {
-      const todayCls = isToday(d) ? ' today-col' : '';
-      return `<th class="${todayCls}">
-        <div class="th-day">${DAYS[i]}</div>
-        <div class="th-date">${d.getDate()}</div>
+    const headerCells = Array.from({ length: days }, (_, i) => {
+      const d = new Date(y, mo, i + 1);
+      const dow = d.getDay();
+      const dateStr = formatDate(d);
+      const isWeekend = dow === 0 || dow === 6;
+      const cls = dateStr === todayStr ? 'today-col' : (isWeekend ? 'weekend-col' : '');
+      return `<th class="${cls}" data-date="${dateStr}">
+        <div class="th-day">${DAY_NAMES[dow]}</div>
+        <div class="th-date">${i+1}</div>
       </th>`;
     }).join('');
 
-    const thead = `<thead><tr><th>이름</th>${headerCells}</tr></thead>`;
+    const thead = `<thead><tr><th class="name-col">이름</th>${headerCells}</tr></thead>`;
 
-    // 행
     const rows = scheduleData.workers.map((w, wi) => {
       const color = getWorkerColor(wi);
-      const cells = dates.map(d => {
+      const cells = Array.from({ length: days }, (_, i) => {
+        const d = new Date(y, mo, i + 1);
+        const dow = d.getDay();
         const dateStr = formatDate(d);
+        const isWeekend = dow === 0 || dow === 6;
         const shift = scheduleData.shifts?.[dateStr]?.[w.id];
-        return `<td><div class="shift-cell ${shift ? 'has-shift' : ''}" data-worker="${w.id}" data-date="${dateStr}" style="${shift ? buildShiftStyle(shift) : ''}">${buildShiftContent(shift)}</div></td>`;
+        const isSelected = selectedCells.has(getCellKey(w.id, dateStr));
+        return `<td class="${isWeekend ? 'weekend-td' : ''}">
+          <div class="shift-cell ${shift ? 'has-shift' : ''} ${isSelected ? 'selected' : ''}"
+               data-worker="${w.id}" data-date="${dateStr}"
+               style="${shift ? buildShiftStyle(shift) : ''}">
+            ${shift ? `<span class="shift-type-label">${SHIFT_TYPES.find(t=>t.id===shift.type)?.label||shift.type}</span>` : '<span class="shift-empty-plus">+</span>'}
+          </div></td>`;
       }).join('');
 
-      return `<tr>
-        <td style="border-left:3px solid ${color};">${esc(w.name)}</td>
-        ${cells}
-      </tr>`;
+      return `<tr><td class="worker-name-cell" style="border-left:3px solid ${color};">${esc(w.name)}</td>${cells}</tr>`;
     }).join('');
 
     table.innerHTML = thead + `<tbody>${rows}</tbody>`;
-
-    // 셀 클릭 이벤트
-    table.querySelectorAll('.shift-cell').forEach(cell => {
-      cell.addEventListener('click', () => {
-        openShiftModal(cell.dataset.worker, cell.dataset.date);
-      });
-    });
   }
 
   function buildShiftStyle(shift) {
@@ -1147,14 +1202,135 @@
     return `background:${type.bg};border-color:${type.bg};color:${type.color};`;
   }
 
-  function buildShiftContent(shift) {
-    if (!shift) return '<span class="shift-empty-plus">+</span>';
-    const type = SHIFT_TYPES.find(t => t.id === shift.type);
-    const label = type?.label || shift.type;
-    if (shift.type === 'off') return `<span class="shift-type-label">${label}</span>`;
-    const timeStr = (shift.start && shift.end) ? `${shift.start}~${shift.end}` : (shift.start || '');
-    return `<span class="shift-type-label">${label}</span>${timeStr ? `<span class="shift-time-label">${timeStr}</span>` : ''}`;
+  // ════════════════════════════════════════
+  //  시간표: 선택 & 액션바
+  // ════════════════════════════════════════
+  function updateSelectionUI() {
+    // 셀 선택 표시
+    document.querySelectorAll('.shift-cell').forEach(cell => {
+      cell.classList.toggle('selected', selectedCells.has(getCellKey(cell.dataset.worker, cell.dataset.date)));
+    });
+
+    const bar = document.getElementById('shift-action-bar');
+    if (selectedCells.size === 0) { bar.classList.remove('show'); return; }
+    bar.classList.add('show');
+    document.getElementById('action-count').textContent = `${selectedCells.size}개 선택`;
+
+    // 복사: 단일 셀 + 근무 있을 때만
+    const copyBtn = document.getElementById('action-copy-btn');
+    let canCopy = false;
+    if (selectedCells.size === 1) {
+      const [wId, date] = [...selectedCells][0].split('|');
+      canCopy = !!scheduleData.shifts?.[date]?.[wId];
+    }
+    copyBtn.disabled = !canCopy;
+
+    // 붙여넣기: 복사된 내용 있을 때
+    document.getElementById('action-paste-btn').disabled = !copiedShift;
+
+    // 시간수정: 단일 셀만
+    document.getElementById('action-time-btn').disabled = selectedCells.size !== 1;
   }
+
+  // 액션바 시프트 타입 칩 초기화 (한 번만)
+  const chipsContainer = document.getElementById('action-type-chips');
+  chipsContainer.innerHTML = SHIFT_TYPES.map(t =>
+    `<button class="action-type-chip" data-type="${t.id}" style="background:${t.bg};color:${t.color};">${t.label}</button>`
+  ).join('');
+  chipsContainer.querySelectorAll('.action-type-chip').forEach(btn => {
+    btn.addEventListener('click', () => applyToSelected(btn.dataset.type));
+  });
+
+  function applyToSelected(typeId) {
+    if (!selectedCells.size) return;
+    const type = SHIFT_TYPES.find(t => t.id === typeId);
+    selectedCells.forEach(key => {
+      const [wId, date] = key.split('|');
+      if (!scheduleData.shifts[date]) scheduleData.shifts[date] = {};
+      scheduleData.shifts[date][wId] = { type: typeId, start: typeId === 'off' ? '' : type.defaultStart, end: typeId === 'off' ? '' : type.defaultEnd };
+    });
+    saveSchedule(); renderScheduleGrid(); updateSelectionUI();
+    toast(`${selectedCells.size}개에 "${type.label}" 적용됨 ✓`);
+  }
+
+  document.getElementById('action-copy-btn').addEventListener('click', () => {
+    if (selectedCells.size !== 1) return;
+    const [wId, date] = [...selectedCells][0].split('|');
+    const shift = scheduleData.shifts?.[date]?.[wId];
+    if (!shift) return;
+    copiedShift = { ...shift };
+    toast('복사됨 ✓');
+    updateSelectionUI();
+  });
+
+  document.getElementById('action-paste-btn').addEventListener('click', () => {
+    if (!copiedShift || !selectedCells.size) return;
+    selectedCells.forEach(key => {
+      const [wId, date] = key.split('|');
+      if (!scheduleData.shifts[date]) scheduleData.shifts[date] = {};
+      scheduleData.shifts[date][wId] = { ...copiedShift };
+    });
+    saveSchedule(); renderScheduleGrid(); updateSelectionUI();
+    toast(`${selectedCells.size}개 붙여넣기됨 ✓`);
+  });
+
+  document.getElementById('action-time-btn').addEventListener('click', () => {
+    if (selectedCells.size !== 1) return;
+    const [wId, date] = [...selectedCells][0].split('|');
+    openShiftModal(wId, date);
+  });
+
+  document.getElementById('action-clear-btn').addEventListener('click', () => {
+    selectedCells.forEach(key => {
+      const [wId, date] = key.split('|');
+      if (scheduleData.shifts?.[date]?.[wId]) {
+        delete scheduleData.shifts[date][wId];
+        if (!Object.keys(scheduleData.shifts[date]).length) delete scheduleData.shifts[date];
+      }
+    });
+    saveSchedule(); renderScheduleGrid();
+    selectedCells.clear(); updateSelectionUI();
+    toast('초기화됨');
+  });
+
+  document.getElementById('action-cancel-btn').addEventListener('click', () => {
+    selectedCells.clear(); updateSelectionUI();
+    document.querySelectorAll('.shift-cell.selected').forEach(c => c.classList.remove('selected'));
+  });
+
+  // 드래그 선택 (이벤트 위임)
+  const gridWrap = document.getElementById('schedule-grid-wrap');
+
+  gridWrap.addEventListener('mousedown', e => {
+    const cell = e.target.closest('.shift-cell');
+    if (!cell) { selectedCells.clear(); updateSelectionUI(); return; }
+    isDragSelecting = true;
+    const key = getCellKey(cell.dataset.worker, cell.dataset.date);
+    if (e.ctrlKey || e.metaKey) {
+      if (selectedCells.has(key)) selectedCells.delete(key); else selectedCells.add(key);
+    } else {
+      selectedCells.clear();
+      selectedCells.add(key);
+    }
+    updateSelectionUI();
+    e.preventDefault();
+  });
+
+  gridWrap.addEventListener('mouseover', e => {
+    if (!isDragSelecting) return;
+    const cell = e.target.closest('.shift-cell');
+    if (!cell) return;
+    selectedCells.add(getCellKey(cell.dataset.worker, cell.dataset.date));
+    updateSelectionUI();
+  });
+
+  gridWrap.addEventListener('dblclick', e => {
+    const cell = e.target.closest('.shift-cell');
+    if (!cell) return;
+    openShiftModal(cell.dataset.worker, cell.dataset.date);
+  });
+
+  document.addEventListener('mouseup', () => { isDragSelecting = false; });
 
   // ════════════════════════════════════════
   //  시간표: 근무 모달
@@ -1252,17 +1428,17 @@
     if (e.target === document.getElementById('shift-modal-overlay')) closeShiftModal();
   });
 
-  // 주 이동
-  document.getElementById('prev-week-btn').addEventListener('click', () => {
-    currentWeekStart = addDays(currentWeekStart, -7);
+  // 월 이동
+  document.getElementById('prev-month-btn').addEventListener('click', () => {
+    currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
     renderScheduleGrid();
   });
-  document.getElementById('next-week-btn').addEventListener('click', () => {
-    currentWeekStart = addDays(currentWeekStart, 7);
+  document.getElementById('next-month-btn').addEventListener('click', () => {
+    currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
     renderScheduleGrid();
   });
   document.getElementById('today-btn').addEventListener('click', () => {
-    currentWeekStart = getMonday(new Date());
+    const d = new Date(); currentMonth = new Date(d.getFullYear(), d.getMonth(), 1);
     renderScheduleGrid();
   });
 
@@ -1829,7 +2005,28 @@
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       if (document.getElementById('shift-modal-overlay').classList.contains('show')) { closeShiftModal(); return; }
-      if (document.getElementById('modal-overlay').classList.contains('show')) closeModal();
+      if (document.getElementById('modal-overlay').classList.contains('show')) { closeModal(); return; }
+      if (appMode === 'schedule' && selectedCells.size > 0) {
+        selectedCells.clear(); updateSelectionUI();
+        document.querySelectorAll('.shift-cell.selected').forEach(c => c.classList.remove('selected'));
+      }
+      return;
+    }
+    if (appMode === 'schedule') {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c' && selectedCells.size === 1) {
+        const [wId, date] = [...selectedCells][0].split('|');
+        const shift = scheduleData.shifts?.[date]?.[wId];
+        if (shift) { copiedShift = { ...shift }; toast('복사됨 ✓'); updateSelectionUI(); }
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v' && copiedShift && selectedCells.size > 0) {
+        selectedCells.forEach(key => {
+          const [wId, date] = key.split('|');
+          if (!scheduleData.shifts[date]) scheduleData.shifts[date] = {};
+          scheduleData.shifts[date][wId] = { ...copiedShift };
+        });
+        saveSchedule(); renderScheduleGrid(); updateSelectionUI();
+        toast(`${selectedCells.size}개 붙여넣기됨 ✓`);
+      }
     }
   });
 
