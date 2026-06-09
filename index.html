@@ -37,7 +37,7 @@
       transition: background 0.2s;
     }
 
-    /* ── 카테고리 사이드바 ── */
+    /* ── 사이드바 ── */
     #sidebar {
       width: 160px;
       min-width: 160px;
@@ -48,8 +48,42 @@
       user-select: none;
     }
 
+    /* ── 모드 토글 ── */
+    #mode-toggle-bar {
+      display: flex;
+      gap: 4px;
+      padding: 10px 8px 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 6px 4px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--sub);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .mode-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    /* ── 메모 사이드바 섹션 ── */
+    #memo-sidebar-section {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+    #memo-sidebar-section.hide { display: none; }
+
     #sidebar-header {
-      padding: 16px 12px 10px;
+      padding: 12px 12px 10px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -127,13 +161,82 @@
     .cat-item.drag-over { outline: 2px dashed var(--accent); outline-offset: -2px; }
     .cat-item.dragging { opacity: 0.35; }
 
-    /* 카테고리 색상 점 */
     .cat-color-dot {
       width: 8px; height: 8px; border-radius: 50%;
       flex-shrink: 0; display: inline-block;
     }
 
-    /* 커스텀 컨텍스트 메뉴 */
+    /* ── 근무자 섹션 ── */
+    #worker-section {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+    #worker-section.show { display: flex; }
+
+    #worker-header {
+      padding: 12px 12px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    #worker-header span {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.6px;
+      color: var(--sub);
+      text-transform: uppercase;
+    }
+    #add-worker-btn {
+      width: 22px; height: 22px;
+      border-radius: 6px; border: none;
+      background: var(--accent); color: #fff;
+      font-size: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #add-worker-btn:hover { opacity: 0.85; }
+
+    #worker-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 8px;
+    }
+    #worker-list::-webkit-scrollbar { width: 3px; }
+    #worker-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .worker-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      margin-bottom: 2px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .worker-item:hover { background: var(--hover); }
+    .worker-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .worker-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .worker-delete {
+      font-size: 13px;
+      color: var(--sub);
+      opacity: 0;
+      cursor: pointer;
+      padding: 2px 4px;
+      border: none;
+      background: transparent;
+      transition: opacity 0.1s;
+      flex-shrink: 0;
+    }
+    .worker-item:hover .worker-delete { opacity: 1; }
+
+    /* ── 커스텀 컨텍스트 메뉴 ── */
     #ctx-menu {
       display: none; position: fixed; z-index: 1000;
       background: var(--panel); border: 1px solid var(--border);
@@ -156,6 +259,15 @@
       flex-direction: column;
       overflow: hidden;
     }
+
+    /* ── 메모 뷰 ── */
+    #memo-view {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+    #memo-view.hide { display: none; }
 
     #main-header {
       padding: 14px 18px 12px;
@@ -193,7 +305,6 @@
     #memo-area::-webkit-scrollbar { width: 4px; }
     #memo-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
-    /* ── 메모 카드 ── */
     #memo-grid {
       display: flex;
       flex-wrap: wrap;
@@ -394,6 +505,252 @@
     }
     .sub-tab-add:hover { color: var(--accent); }
 
+    /* ── 시간표 뷰 ── */
+    #schedule-view {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+    #schedule-view.show { display: flex; }
+
+    #schedule-nav {
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--panel);
+      flex-shrink: 0;
+    }
+    #week-label {
+      font-size: 15px;
+      font-weight: 700;
+      flex: 1;
+    }
+    .nav-btn {
+      width: 28px; height: 28px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.1s;
+      line-height: 1;
+    }
+    .nav-btn:hover { background: var(--hover); }
+    #today-btn {
+      padding: 5px 12px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: transparent;
+      font-size: 12px;
+      color: var(--sub);
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    #today-btn:hover { background: var(--hover); color: var(--text); }
+
+    #schedule-grid-wrap {
+      flex: 1;
+      overflow: auto;
+      padding: 16px;
+    }
+    #schedule-grid-wrap::-webkit-scrollbar { width: 4px; height: 4px; }
+    #schedule-grid-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    #no-worker-msg {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      font-size: 13px;
+      color: var(--sub);
+    }
+
+    #schedule-table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 12px;
+    }
+    #schedule-table th {
+      padding: 8px 10px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--sub);
+      border-bottom: 2px solid var(--border);
+      background: var(--panel);
+      white-space: nowrap;
+      min-width: 100px;
+    }
+    #schedule-table th:first-child {
+      text-align: left;
+      min-width: 80px;
+      position: sticky;
+      left: 0;
+      background: var(--panel);
+      z-index: 2;
+    }
+    #schedule-table th.today-col { color: var(--accent); }
+    #schedule-table th .th-day { font-size: 11px; }
+    #schedule-table th .th-date { font-size: 14px; font-weight: 700; margin-top: 1px; }
+
+    #schedule-table td {
+      border: 1px solid var(--border);
+      padding: 4px;
+      vertical-align: middle;
+    }
+    #schedule-table td:first-child {
+      padding: 8px 12px;
+      font-weight: 600;
+      font-size: 13px;
+      background: var(--panel);
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      white-space: nowrap;
+      border-left: none;
+    }
+    #schedule-table tr:hover td:first-child { background: var(--hover); }
+
+    .shift-cell {
+      min-height: 42px;
+      border-radius: 7px;
+      padding: 6px 8px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 2px;
+      transition: opacity 0.12s, transform 0.1s;
+      border: 1.5px dashed var(--border);
+      background: transparent;
+    }
+    .shift-cell:hover { opacity: 0.75; transform: scale(0.97); }
+    .shift-cell.has-shift { border-style: solid; }
+
+    .shift-type-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .shift-time-label {
+      font-size: 10px;
+      opacity: 0.8;
+    }
+    .shift-empty-plus {
+      font-size: 16px;
+      color: var(--border);
+      line-height: 1;
+    }
+    .shift-cell:hover .shift-empty-plus { color: var(--accent); }
+
+    /* ── 근무 등록 모달 ── */
+    #shift-modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.2); z-index: 400;
+      backdrop-filter: blur(3px);
+      align-items: center; justify-content: center;
+    }
+    #shift-modal-overlay.show { display: flex; }
+    #shift-modal {
+      background: var(--panel);
+      border-radius: 14px;
+      width: 300px;
+      max-width: 92vw;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+      overflow: hidden;
+    }
+    #shift-modal-top {
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    #shift-modal-body {
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .shift-type-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .shift-type-btn {
+      padding: 8px 4px;
+      border-radius: 8px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      transition: all 0.12s;
+      opacity: 0.45;
+    }
+    .shift-type-btn:hover { opacity: 0.7; }
+    .shift-type-btn.selected { border-color: rgba(0,0,0,0.25); opacity: 1; }
+
+    .shift-time-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .shift-time-row label {
+      font-size: 12px;
+      color: var(--sub);
+      width: 30px;
+      flex-shrink: 0;
+    }
+    .shift-time-row input[type="time"] {
+      flex: 1;
+      padding: 7px 10px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+      font-family: inherit;
+    }
+    .shift-time-row input[type="time"]:focus { border-color: var(--accent); }
+
+    #shift-time-section { display: flex; flex-direction: column; gap: 8px; }
+
+    .shift-modal-actions {
+      display: flex;
+      gap: 6px;
+      padding: 0 16px 14px;
+    }
+    .shift-modal-actions button {
+      flex: 1;
+      padding: 9px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.1s;
+      font-family: inherit;
+    }
+    .shift-modal-actions button:hover { background: var(--hover); }
+    .shift-modal-actions button.primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .shift-modal-actions button.primary:hover { opacity: 0.88; }
+    .shift-modal-actions button.danger { color: #e53935; }
+    .shift-modal-actions button.danger:hover { background: #fff0f0; border-color: #e53935; }
+    body.dark .shift-modal-actions button.danger:hover { background: #2a1010; color: #f87171; border-color: #f87171; }
+
     #toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--text); color: var(--panel); padding: 8px 16px; border-radius: 18px; font-size: 12px; font-weight: 500; opacity: 0; pointer-events: none; transition: opacity 0.18s, transform 0.18s; z-index: 999; }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   </style>
@@ -401,25 +758,60 @@
 <body>
 
 <div id="sidebar">
-  <div id="sidebar-header">
-    <span>카테고리</span>
-    <button id="add-cat-btn">+</button>
+  <div id="mode-toggle-bar">
+    <button class="mode-btn active" id="mode-memo-btn">메모</button>
+    <button class="mode-btn" id="mode-schedule-btn">시간표</button>
   </div>
-  <div id="cat-list"></div>
+
+  <!-- 메모 사이드바 -->
+  <div id="memo-sidebar-section">
+    <div id="sidebar-header">
+      <span>카테고리</span>
+      <button id="add-cat-btn">+</button>
+    </div>
+    <div id="cat-list"></div>
+  </div>
+
+  <!-- 시간표 사이드바 -->
+  <div id="worker-section">
+    <div id="worker-header">
+      <span>근무자</span>
+      <button id="add-worker-btn">+</button>
+    </div>
+    <div id="worker-list"></div>
+  </div>
 </div>
 
 <div id="main">
-  <div id="main-header">
-    <h2 id="current-cat-name">카테고리 선택</h2>
-    <button class="header-btn primary" id="add-memo-btn">+ 메모</button>
+  <!-- 메모 뷰 -->
+  <div id="memo-view">
+    <div id="main-header">
+      <h2 id="current-cat-name">카테고리 선택</h2>
+      <button class="header-btn primary" id="add-memo-btn">+ 메모</button>
+    </div>
+    <div id="sub-tab-bar"></div>
+    <div id="memo-area">
+      <div id="no-cat-msg">왼쪽에서 카테고리를 선택하세요</div>
+      <div id="memo-grid" style="display:none;"></div>
+    </div>
   </div>
-  <div id="sub-tab-bar"></div>
-  <div id="memo-area">
-    <div id="no-cat-msg">왼쪽에서 카테고리를 선택하세요</div>
-    <div id="memo-grid" style="display:none;"></div>
+
+  <!-- 시간표 뷰 -->
+  <div id="schedule-view">
+    <div id="schedule-nav">
+      <button class="nav-btn" id="prev-week-btn">‹</button>
+      <span id="week-label"></span>
+      <button class="nav-btn" id="next-week-btn">›</button>
+      <button id="today-btn">오늘</button>
+    </div>
+    <div id="schedule-grid-wrap">
+      <div id="no-worker-msg" style="display:none;">좌측에서 근무자를 추가하세요</div>
+      <table id="schedule-table"></table>
+    </div>
   </div>
 </div>
 
+<!-- 메모 수정 모달 -->
 <div id="modal-overlay">
   <div id="modal">
     <div id="modal-top">
@@ -428,6 +820,31 @@
       <button class="m-btn" id="modal-close-btn">닫기</button>
     </div>
     <textarea id="modal-body" placeholder="내용을 입력하세요..."></textarea>
+  </div>
+</div>
+
+<!-- 근무 등록 모달 -->
+<div id="shift-modal-overlay">
+  <div id="shift-modal">
+    <div id="shift-modal-top"></div>
+    <div id="shift-modal-body">
+      <div class="shift-type-grid" id="shift-type-grid"></div>
+      <div id="shift-time-section">
+        <div class="shift-time-row">
+          <label>출근</label>
+          <input type="time" id="shift-start" />
+        </div>
+        <div class="shift-time-row">
+          <label>퇴근</label>
+          <input type="time" id="shift-end" />
+        </div>
+      </div>
+    </div>
+    <div class="shift-modal-actions">
+      <button id="shift-clear-btn" class="danger">초기화</button>
+      <button id="shift-cancel-btn">취소</button>
+      <button id="shift-save-btn" class="primary">저장</button>
+    </div>
   </div>
 </div>
 
@@ -479,7 +896,16 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
   const dataRef = doc(db, 'memoapp', 'data');
+  const scheduleRef = doc(db, 'memoapp', 'schedule');
 
+  // ════════════════════════════════════════
+  //  공통 상태
+  // ════════════════════════════════════════
+  let appMode = 'memo'; // 'memo' | 'schedule'
+
+  // ════════════════════════════════════════
+  //  메모 상태
+  // ════════════════════════════════════════
   let data = { categories: [] };
   let currentCatId = null;
   let currentSubCatId = null;
@@ -488,8 +914,361 @@
   let saveTimer = null;
   let isRemoteUpdate = false;
 
-  // ── 저장/로드 ──
-  // ── 컨텍스트 메뉴 ──
+  // ════════════════════════════════════════
+  //  시간표 상태
+  // ════════════════════════════════════════
+  const WORKER_COLORS = ['#5b50e8','#34c759','#ff9500','#af52de','#ff3b30','#00c7be','#ff6b35','#1c7ed6'];
+
+  const SHIFT_TYPES = [
+    { id: 'normal',    label: '정상', color: '#ffffff', bg: '#5b50e8', defaultStart: '09:00', defaultEnd: '18:00' },
+    { id: 'morning',   label: '오전', color: '#ffffff', bg: '#1c7ed6', defaultStart: '07:00', defaultEnd: '13:00' },
+    { id: 'afternoon', label: '오후', color: '#ffffff', bg: '#ff9500', defaultStart: '13:00', defaultEnd: '19:00' },
+    { id: 'night',     label: '야간', color: '#ffffff', bg: '#af52de', defaultStart: '22:00', defaultEnd: '07:00' },
+    { id: 'half',      label: '반차',  color: '#ffffff', bg: '#34c759', defaultStart: '13:00', defaultEnd: '18:00' },
+    { id: 'off',       label: '휴무', color: '#8e8e93', bg: '#f2f2f5', defaultStart: '',      defaultEnd: ''      },
+  ];
+
+  let scheduleData = { workers: [], shifts: {} };
+  let currentWeekStart = getMonday(new Date());
+  let scheduleSaveTimer = null;
+
+  // 근무 모달 상태
+  let shiftWorkerId = null;
+  let shiftDate = null;
+  let selectedShiftType = null;
+
+  // ────────────────────────────────────────
+  //  유틸
+  // ────────────────────────────────────────
+  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  function getMonday(d) {
+    const date = new Date(d);
+    const day = date.getDay();
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+    date.setDate(diff);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+
+  function addDays(d, n) {
+    const date = new Date(d);
+    date.setDate(date.getDate() + n);
+    return date;
+  }
+
+  function formatDate(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function isToday(d) {
+    const t = new Date();
+    return d.getFullYear() === t.getFullYear() && d.getMonth() === t.getMonth() && d.getDate() === t.getDate();
+  }
+
+  // ════════════════════════════════════════
+  //  모드 전환
+  // ════════════════════════════════════════
+  function switchMode(newMode) {
+    appMode = newMode;
+    document.getElementById('mode-memo-btn').classList.toggle('active', appMode === 'memo');
+    document.getElementById('mode-schedule-btn').classList.toggle('active', appMode === 'schedule');
+
+    document.getElementById('memo-sidebar-section').classList.toggle('hide', appMode === 'schedule');
+    document.getElementById('worker-section').classList.toggle('show', appMode === 'schedule');
+
+    document.getElementById('memo-view').classList.toggle('hide', appMode === 'schedule');
+    document.getElementById('schedule-view').classList.toggle('show', appMode === 'schedule');
+
+    if (appMode === 'schedule') {
+      renderWeekLabel();
+      renderScheduleGrid();
+    }
+  }
+
+  document.getElementById('mode-memo-btn').addEventListener('click', () => switchMode('memo'));
+  document.getElementById('mode-schedule-btn').addEventListener('click', () => switchMode('schedule'));
+
+  // ════════════════════════════════════════
+  //  시간표: 저장/로드
+  // ════════════════════════════════════════
+  async function saveSchedule() {
+    clearTimeout(scheduleSaveTimer);
+    scheduleSaveTimer = setTimeout(async () => {
+      await setDoc(scheduleRef, {
+        workers: scheduleData.workers,
+        shifts: scheduleData.shifts
+      });
+    }, 400);
+  }
+
+  onSnapshot(scheduleRef, (snap) => {
+    if (snap.exists()) {
+      const remote = snap.data();
+      scheduleData.workers = remote.workers || [];
+      scheduleData.shifts  = remote.shifts  || {};
+    } else {
+      scheduleData = { workers: [], shifts: {} };
+    }
+    if (appMode === 'schedule') {
+      renderWorkers();
+      renderScheduleGrid();
+    } else {
+      renderWorkers();
+    }
+  });
+
+  // ════════════════════════════════════════
+  //  시간표: 근무자
+  // ════════════════════════════════════════
+  function getWorkerColor(index) {
+    return WORKER_COLORS[index % WORKER_COLORS.length];
+  }
+
+  function renderWorkers() {
+    const list = document.getElementById('worker-list');
+    if (!scheduleData.workers.length) {
+      list.innerHTML = '<div style="padding:12px;font-size:12px;color:var(--sub);text-align:center">+ 버튼으로<br>추가하세요</div>';
+      return;
+    }
+    list.innerHTML = scheduleData.workers.map((w, i) => `
+      <div class="worker-item" data-id="${w.id}">
+        <span class="worker-dot" style="background:${getWorkerColor(i)}"></span>
+        <span class="worker-name">${esc(w.name)}</span>
+        <button class="worker-delete" data-id="${w.id}" title="삭제">✕</button>
+      </div>
+    `).join('');
+
+    list.querySelectorAll('.worker-delete').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        const w = scheduleData.workers.find(x => x.id === id);
+        if (w && confirm(`"${w.name}" 근무자를 삭제할까요?`)) {
+          scheduleData.workers = scheduleData.workers.filter(x => x.id !== id);
+          // 해당 근무자 시프트도 정리
+          Object.keys(scheduleData.shifts).forEach(date => {
+            delete scheduleData.shifts[date][id];
+            if (!Object.keys(scheduleData.shifts[date]).length) delete scheduleData.shifts[date];
+          });
+          saveSchedule();
+          renderWorkers();
+          if (appMode === 'schedule') renderScheduleGrid();
+        }
+      });
+    });
+  }
+
+  document.getElementById('add-worker-btn').addEventListener('click', () => {
+    const name = prompt('근무자 이름을 입력하세요');
+    if (!name?.trim()) return;
+    const id = Date.now().toString();
+    scheduleData.workers.push({ id, name: name.trim() });
+    saveSchedule();
+    renderWorkers();
+    if (appMode === 'schedule') renderScheduleGrid();
+  });
+
+  // ════════════════════════════════════════
+  //  시간표: 그리드 렌더
+  // ════════════════════════════════════════
+  const DAYS = ['월', '화', '수', '목', '금', '토', '일'];
+
+  function renderWeekLabel() {
+    const end = addDays(currentWeekStart, 6);
+    const s = currentWeekStart;
+    const label = `${s.getFullYear()}년 ${s.getMonth()+1}월 ${s.getDate()}일 ~ ${end.getMonth()+1}월 ${end.getDate()}일`;
+    document.getElementById('week-label').textContent = label;
+  }
+
+  function renderScheduleGrid() {
+    renderWeekLabel();
+    const noMsg = document.getElementById('no-worker-msg');
+    const table = document.getElementById('schedule-table');
+
+    if (!scheduleData.workers.length) {
+      noMsg.style.display = 'flex';
+      table.style.display = 'none';
+      return;
+    }
+    noMsg.style.display = 'none';
+    table.style.display = '';
+
+    const dates = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
+
+    // 헤더
+    const headerCells = dates.map((d, i) => {
+      const todayCls = isToday(d) ? ' today-col' : '';
+      return `<th class="${todayCls}">
+        <div class="th-day">${DAYS[i]}</div>
+        <div class="th-date">${d.getDate()}</div>
+      </th>`;
+    }).join('');
+
+    const thead = `<thead><tr><th>이름</th>${headerCells}</tr></thead>`;
+
+    // 행
+    const rows = scheduleData.workers.map((w, wi) => {
+      const color = getWorkerColor(wi);
+      const cells = dates.map(d => {
+        const dateStr = formatDate(d);
+        const shift = scheduleData.shifts?.[dateStr]?.[w.id];
+        return `<td><div class="shift-cell ${shift ? 'has-shift' : ''}" data-worker="${w.id}" data-date="${dateStr}" style="${shift ? buildShiftStyle(shift) : ''}">${buildShiftContent(shift)}</div></td>`;
+      }).join('');
+
+      return `<tr>
+        <td style="border-left:3px solid ${color};">${esc(w.name)}</td>
+        ${cells}
+      </tr>`;
+    }).join('');
+
+    table.innerHTML = thead + `<tbody>${rows}</tbody>`;
+
+    // 셀 클릭 이벤트
+    table.querySelectorAll('.shift-cell').forEach(cell => {
+      cell.addEventListener('click', () => {
+        openShiftModal(cell.dataset.worker, cell.dataset.date);
+      });
+    });
+  }
+
+  function buildShiftStyle(shift) {
+    const type = SHIFT_TYPES.find(t => t.id === shift.type);
+    if (!type) return '';
+    return `background:${type.bg};border-color:${type.bg};color:${type.color};`;
+  }
+
+  function buildShiftContent(shift) {
+    if (!shift) return '<span class="shift-empty-plus">+</span>';
+    const type = SHIFT_TYPES.find(t => t.id === shift.type);
+    const label = type?.label || shift.type;
+    if (shift.type === 'off') return `<span class="shift-type-label">${label}</span>`;
+    const timeStr = (shift.start && shift.end) ? `${shift.start}~${shift.end}` : (shift.start || '');
+    return `<span class="shift-type-label">${label}</span>${timeStr ? `<span class="shift-time-label">${timeStr}</span>` : ''}`;
+  }
+
+  // ════════════════════════════════════════
+  //  시간표: 근무 모달
+  // ════════════════════════════════════════
+  function openShiftModal(workerId, dateStr) {
+    shiftWorkerId = workerId;
+    shiftDate = dateStr;
+
+    const worker = scheduleData.workers.find(w => w.id === workerId);
+    const [year, month, day] = dateStr.split('-');
+    const existing = scheduleData.shifts?.[dateStr]?.[workerId];
+
+    // 모달 타이틀
+    document.getElementById('shift-modal-top').textContent =
+      `${worker?.name || ''} · ${Number(month)}/${Number(day)}`;
+
+    // 근무 유형 버튼
+    const typeGrid = document.getElementById('shift-type-grid');
+    typeGrid.innerHTML = SHIFT_TYPES.map(t => `
+      <button class="shift-type-btn ${existing?.type === t.id ? 'selected' : ''}"
+              data-id="${t.id}"
+              style="background:${t.bg};color:${t.color};">
+        ${t.label}
+      </button>
+    `).join('');
+
+    // 초기 선택 타입
+    selectedShiftType = existing?.type || null;
+
+    typeGrid.querySelectorAll('.shift-type-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectedShiftType = btn.dataset.id;
+        typeGrid.querySelectorAll('.shift-type-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        const type = SHIFT_TYPES.find(t => t.id === selectedShiftType);
+        const timeSection = document.getElementById('shift-time-section');
+        if (selectedShiftType === 'off') {
+          timeSection.style.display = 'none';
+        } else {
+          timeSection.style.display = '';
+          if (!document.getElementById('shift-start').value) {
+            document.getElementById('shift-start').value = type?.defaultStart || '';
+            document.getElementById('shift-end').value = type?.defaultEnd || '';
+          }
+        }
+      });
+    });
+
+    // 시간 입력
+    document.getElementById('shift-start').value = existing?.start || '';
+    document.getElementById('shift-end').value = existing?.end || '';
+
+    const timeSection = document.getElementById('shift-time-section');
+    timeSection.style.display = (existing?.type === 'off') ? 'none' : '';
+
+    document.getElementById('shift-modal-overlay').classList.add('show');
+  }
+
+  function closeShiftModal() {
+    document.getElementById('shift-modal-overlay').classList.remove('show');
+    shiftWorkerId = null;
+    shiftDate = null;
+    selectedShiftType = null;
+  }
+
+  document.getElementById('shift-save-btn').addEventListener('click', () => {
+    if (!selectedShiftType) { toast('근무 유형을 선택하세요'); return; }
+    if (!scheduleData.shifts[shiftDate]) scheduleData.shifts[shiftDate] = {};
+    const start = document.getElementById('shift-start').value;
+    const end = document.getElementById('shift-end').value;
+    scheduleData.shifts[shiftDate][shiftWorkerId] = {
+      type: selectedShiftType,
+      start: selectedShiftType === 'off' ? '' : start,
+      end:   selectedShiftType === 'off' ? '' : end,
+    };
+    saveSchedule();
+    renderScheduleGrid();
+    closeShiftModal();
+    toast('저장됨 ✓');
+  });
+
+  document.getElementById('shift-clear-btn').addEventListener('click', () => {
+    if (scheduleData.shifts?.[shiftDate]?.[shiftWorkerId]) {
+      delete scheduleData.shifts[shiftDate][shiftWorkerId];
+      if (!Object.keys(scheduleData.shifts[shiftDate]).length) delete scheduleData.shifts[shiftDate];
+      saveSchedule();
+      renderScheduleGrid();
+      toast('초기화됨');
+    }
+    closeShiftModal();
+  });
+
+  document.getElementById('shift-cancel-btn').addEventListener('click', closeShiftModal);
+  document.getElementById('shift-modal-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('shift-modal-overlay')) closeShiftModal();
+  });
+
+  // 주 이동
+  document.getElementById('prev-week-btn').addEventListener('click', () => {
+    currentWeekStart = addDays(currentWeekStart, -7);
+    renderScheduleGrid();
+  });
+  document.getElementById('next-week-btn').addEventListener('click', () => {
+    currentWeekStart = addDays(currentWeekStart, 7);
+    renderScheduleGrid();
+  });
+  document.getElementById('today-btn').addEventListener('click', () => {
+    currentWeekStart = getMonday(new Date());
+    renderScheduleGrid();
+  });
+
+  // ════════════════════════════════════════
+  //  메모: 컨텍스트 메뉴
+  // ════════════════════════════════════════
   const ctxMenu = document.getElementById('ctx-menu');
   const ctxColorPicker = document.getElementById('ctx-color-picker');
   const ctxTextColorPicker = document.getElementById('ctx-textcolor-picker');
@@ -617,6 +1396,9 @@
     hideCtxMenu();
   });
 
+  // ════════════════════════════════════════
+  //  메모: 저장/로드
+  // ════════════════════════════════════════
   function loadCfg() {
     const cfg = JSON.parse(localStorage.getItem('memoapp-cfg') || '{}');
     autoCopy = cfg.autoCopy !== false;
@@ -639,7 +1421,6 @@
     }));
   }
 
-  // Firestore 실시간 동기화
   onSnapshot(dataRef, (snap) => {
     if (snap.exists()) {
       const remote = snap.data();
@@ -654,9 +1435,12 @@
     renderMemos();
     isRemoteUpdate = false;
   });
+
   function setToggle(id, on) { document.getElementById(id).classList.toggle('on', on); }
 
-  // ── 카테고리 렌더 ──
+  // ════════════════════════════════════════
+  //  메모: 카테고리 렌더
+  // ════════════════════════════════════════
   function renderCats() {
     const el = document.getElementById('cat-list');
     if (!data.categories.length) {
@@ -678,12 +1462,10 @@
         if (e.target.classList.contains('cat-name-input') && !e.target.readOnly) return;
         selectCat(item.dataset.id);
       });
-      // 핸들 mousedown 시에만 draggable 활성화
       const catHandle = item.querySelector('.cat-drag-handle');
       catHandle.addEventListener('mousedown', () => { item.draggable = true; });
       item.addEventListener('dragend', () => { item.draggable = false; item.classList.remove('dragging'); });
 
-      // 드래그 순서 변경
       item.addEventListener('dragstart', e => {
         e.dataTransfer.setData('cat-index', item.dataset.index);
         item.classList.add('dragging');
@@ -721,7 +1503,9 @@
     });
   }
 
-  // ── 서브탭 컨텍스트 메뉴 ──
+  // ════════════════════════════════════════
+  //  메모: 서브탭
+  // ════════════════════════════════════════
   let subCtxCatId = null;
   let subCtxSubId = null;
 
@@ -740,7 +1524,6 @@
     ctxMenu.style.top = (y + mh > innerHeight ? y - mh : y) + 'px';
   }
 
-  // ── 서브탭 렌더 ──
   function renderSubTabs() {
     const bar = document.getElementById('sub-tab-bar');
     if (!currentCatId) { bar.classList.remove('show'); return; }
@@ -767,7 +1550,6 @@
 
       if (!tab.dataset.id) return;
 
-      // 드래그 (핸들로만)
       const handle = tab.querySelector('.sub-tab-handle');
       if (handle) {
         handle.addEventListener('mousedown', () => { tab.draggable = true; });
@@ -789,7 +1571,6 @@
         });
       }
 
-      // 우클릭
       tab.addEventListener('contextmenu', e => {
         e.preventDefault();
         showSubCtxMenu(e.clientX, e.clientY, currentCatId, tab.dataset.id);
@@ -808,7 +1589,9 @@
     });
   }
 
-  // ── 메모 렌더 ──
+  // ════════════════════════════════════════
+  //  메모: 메모 렌더
+  // ════════════════════════════════════════
   function renderMemos() {
     const noMsg = document.getElementById('no-cat-msg');
     const grid = document.getElementById('memo-grid');
@@ -828,7 +1611,6 @@
       ? cat.memos.map((m, i) => ({ ...m, _i: i })).filter(m => m.subcatId === currentSubCatId)
       : cat.memos.map((m, i) => ({ ...m, _i: i }));
 
-    // 전체 탭일 때 서브탭별로 그룹화
     if (!currentSubCatId && cat.subcats?.length) {
       const groups = [];
       const subcatOrder = [...(cat.subcats || []), { id: null, name: '' }];
@@ -880,75 +1662,67 @@
   }
 
   function attachCardEvents(card) {
-      // 카드 본문 클릭 → 복사
-      card.querySelector('.memo-card-info').addEventListener('click', () => {
-        if (autoCopy) {
-          copyMemo(card.dataset.id);
-          const sub = card.style.borderColor;
-          if (sub) {
-            card.style.transition = 'background 0.1s';
-            card.style.background = card.style.borderColor;
-            card.style.color = '#fff';
-            setTimeout(() => {
-              card.style.background = '';
-              card.style.color = '';
-            }, 400);
-          } else {
-            card.style.transition = 'background 0.1s';
-            card.style.background = 'var(--accent)';
-            card.style.color = '#fff';
-            setTimeout(() => {
-              card.style.background = '';
-              card.style.color = '';
-            }, 400);
-          }
+    card.querySelector('.memo-card-info').addEventListener('click', () => {
+      if (autoCopy) {
+        copyMemo(card.dataset.id);
+        const sub = card.style.borderColor;
+        if (sub) {
+          card.style.transition = 'background 0.1s';
+          card.style.background = card.style.borderColor;
+          card.style.color = '#fff';
+          setTimeout(() => { card.style.background = ''; card.style.color = ''; }, 400);
+        } else {
+          card.style.transition = 'background 0.1s';
+          card.style.background = 'var(--accent)';
+          card.style.color = '#fff';
+          setTimeout(() => { card.style.background = ''; card.style.color = ''; }, 400);
         }
-      });
+      }
+    });
 
-      // 수정 버튼 클릭 → 모달
-      card.querySelector('.memo-card-edit').addEventListener('click', e => {
-        e.stopPropagation();
-        openModal(card.dataset.id);
-      });
+    card.querySelector('.memo-card-edit').addEventListener('click', e => {
+      e.stopPropagation();
+      openModal(card.dataset.id);
+    });
 
-      // 우클릭 → 삭제
-      card.addEventListener('contextmenu', e => {
-        e.preventDefault();
-        const cat = data.categories.find(c => c.id === currentCatId);
-        const memo = cat?.memos.find(m => m.id === card.dataset.id);
-        if (!memo) return;
-        if (confirm(`"${memo.title || '제목 없음'}" 메모를 삭제할까요?`)) {
-          pushUndo();
-          cat.memos = cat.memos.filter(m => m.id !== card.dataset.id);
-          save(); renderCats(); renderMemos();
-        }
-      });
+    card.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      const cat = data.categories.find(c => c.id === currentCatId);
+      const memo = cat?.memos.find(m => m.id === card.dataset.id);
+      if (!memo) return;
+      if (confirm(`"${memo.title || '제목 없음'}" 메모를 삭제할까요?`)) {
+        pushUndo();
+        cat.memos = cat.memos.filter(m => m.id !== card.dataset.id);
+        save(); renderCats(); renderMemos();
+      }
+    });
 
-      // 핸들 mousedown 시에만 draggable 활성화
-      const handle = card.querySelector('.memo-card-handle');
-      handle.addEventListener('mousedown', () => { card.draggable = true; });
-      card.addEventListener('dragend', () => { card.draggable = false; card.classList.remove('dragging'); });
+    const handle = card.querySelector('.memo-card-handle');
+    handle.addEventListener('mousedown', () => { card.draggable = true; });
+    card.addEventListener('dragend', () => { card.draggable = false; card.classList.remove('dragging'); });
 
-      card.addEventListener('dragstart', e => {
-        e.dataTransfer.setData('memo-index', card.dataset.index);
-        setTimeout(() => card.classList.add('dragging'), 0);
-      });
-      card.addEventListener('dragover', e => { e.preventDefault(); card.classList.add('drag-over'); });
-      card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
-      card.addEventListener('drop', e => {
-        e.preventDefault();
-        card.classList.remove('drag-over');
-        const from = parseInt(e.dataTransfer.getData('memo-index'));
-        const to = parseInt(card.dataset.index);
-        if (from === to) return;
-        const cat = data.categories.find(c => c.id === currentCatId);
-        const moved = cat.memos.splice(from, 1)[0];
-        cat.memos.splice(to, 0, moved);
-        save(); renderMemos();
-      });
+    card.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('memo-index', card.dataset.index);
+      setTimeout(() => card.classList.add('dragging'), 0);
+    });
+    card.addEventListener('dragover', e => { e.preventDefault(); card.classList.add('drag-over'); });
+    card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+    card.addEventListener('drop', e => {
+      e.preventDefault();
+      card.classList.remove('drag-over');
+      const from = parseInt(e.dataTransfer.getData('memo-index'));
+      const to = parseInt(card.dataset.index);
+      if (from === to) return;
+      const cat = data.categories.find(c => c.id === currentCatId);
+      const moved = cat.memos.splice(from, 1)[0];
+      cat.memos.splice(to, 0, moved);
+      save(); renderMemos();
+    });
   }
 
-  // ── 선택 ──
+  // ════════════════════════════════════════
+  //  메모: CRUD
+  // ════════════════════════════════════════
   function selectCat(id) {
     currentCatId = id;
     currentSubCatId = null;
@@ -958,7 +1732,6 @@
     renderMemos();
   }
 
-  // ── CRUD ──
   function addCat() {
     const id = Date.now().toString();
     data.categories.push({ id, name: '새 카테고리', memos: [] });
@@ -1029,8 +1802,9 @@
     });
   }
 
-  // ── 유틸 ──
-  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  // ════════════════════════════════════════
+  //  메모: 유틸
+  // ════════════════════════════════════════
   function timeAgo(ts) {
     const d = Date.now() - ts;
     if (d < 60000) return '방금 전';
@@ -1038,27 +1812,27 @@
     if (d < 86400000) return Math.floor(d/3600000) + '시간 전';
     const dt = new Date(ts); return `${dt.getMonth()+1}/${dt.getDate()}`;
   }
-  function toast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg; t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 1800);
-  }
 
-  // ── 이벤트 ──
+  // ════════════════════════════════════════
+  //  메모: 이벤트
+  // ════════════════════════════════════════
   document.getElementById('add-cat-btn').addEventListener('click', addCat);
   document.getElementById('add-memo-btn').addEventListener('click', addMemo);
   document.getElementById('modal-title').addEventListener('input', updateMemo);
   document.getElementById('modal-body').addEventListener('input', updateMemo);
   document.getElementById('modal-delete-btn').addEventListener('click', deleteMemo);
   document.getElementById('modal-close-btn').addEventListener('click', closeModal);
-  document.getElementById('modal-overlay').addEventListener('click', e => { if (e.target === document.getElementById('modal-overlay')) closeModal(); });
-
-  // ESC로 모달 닫기
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && document.getElementById('modal-overlay').classList.contains('show')) closeModal();
+  document.getElementById('modal-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('modal-overlay')) closeModal();
   });
 
-  // Ctrl+Z 실행 취소
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      if (document.getElementById('shift-modal-overlay').classList.contains('show')) { closeShiftModal(); return; }
+      if (document.getElementById('modal-overlay').classList.contains('show')) closeModal();
+    }
+  });
+
   const undoStack = [];
   function pushUndo() {
     undoStack.push(JSON.stringify(data.categories));
@@ -1100,7 +1874,6 @@
         if (!imported.categories) throw new Error();
         const total = imported.categories.reduce((s, c) => s + c.memos.length, 0);
         if (!confirm(`카테고리 ${imported.categories.length}개, 메모 ${total}개를 가져올까요?\n기존 데이터에 합쳐집니다.`)) return;
-        // 기존 데이터에 합치기 (id 충돌 방지)
         imported.categories.forEach(ic => {
           const existing = data.categories.find(c => c.name === ic.name);
           if (existing) {
