@@ -180,7 +180,7 @@
     .cal-shift-item:hover { opacity:0.72; }
     .cal-shift-item.selected { outline:2px solid var(--accent); outline-offset:0; box-shadow:0 0 0 2px rgba(91,80,232,0.2); }
     .cal-shift-type-bar { width:4px; height:100%; flex-shrink:0; border-radius:0; }
-    .cal-shift-short { font-size:9px; font-weight:800; flex-shrink:0; width:14px; text-align:center; }
+    .cal-shift-short { font-size:9px; font-weight:800; flex-shrink:0; white-space:nowrap; }
     .cal-shift-name { font-weight:700; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:3.5em; }
     .cal-shift-time { font-size:9.5px; opacity:0.85; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
 
@@ -392,13 +392,6 @@
 
 <!-- 시간표 컨텍스트 메뉴 -->
 <div id="sched-ctx-menu">
-  <div class="sched-ctx-item" id="sched-ctx-edit">✏️ 수정</div>
-  <div class="sched-ctx-sep"></div>
-  <div class="sched-ctx-item" id="sched-ctx-copy-day">📋 이 날 복사</div>
-  <div class="sched-ctx-item" id="sched-ctx-copy-week">📋 이 주 복사</div>
-  <div class="sched-ctx-item" id="sched-ctx-paste-day">📌 이 날에 붙여넣기</div>
-  <div class="sched-ctx-item" id="sched-ctx-paste-week">📌 이 주에 붙여넣기</div>
-  <div class="sched-ctx-sep"></div>
   <div class="sched-ctx-item danger" id="sched-ctx-delete-shift">이 근무 삭제</div>
   <div class="sched-ctx-item danger" id="sched-ctx-clear-day">이 날 전체 초기화</div>
 </div>
@@ -470,7 +463,7 @@
     { id:'night',     label:'야간', short:'야', color:'#ffffff', bg:'#af52de', defaultStart:'22:00', defaultEnd:'07:00' },
     { id:'annual',    label:'연차', short:'연', color:'#ffffff', bg:'#ff6b35', defaultStart:'', defaultEnd:'' },
     { id:'half',      label:'반차', short:'반', color:'#ffffff', bg:'#34c759', defaultStart:'13:00', defaultEnd:'18:00' },
-    { id:'off',       label:'휴무', short:'휴', color:'#636366', bg:'#e5e5ea', defaultStart:'', defaultEnd:'' },
+    { id:'off',       label:'휴무', short:'휴', color:'#ffffff', bg:'#6e6e73', defaultStart:'', defaultEnd:'' },
   ];
 
   let scheduleData = { workers:[], shifts:{}, handover:'' };
@@ -480,9 +473,9 @@
   let selectedCells = new Set();
   let copiedShift = null;
   let isDragSelecting = false;
-  let selectedDate = null;        // 날짜 단위 선택
-  let copiedDayShifts = null;     // { wId: shift, ... }
-  let copiedWeekShifts = null;    // { 'YYYY-MM-DD': { wId: shift } }
+  let selectedDates = new Set();    // 날짜 단위 선택 (클릭/드래그)
+  let isDayDragSelecting = false;
+  let copiedDateRangeShifts = null; // { sortedDates:[], shifts:{date:{wId:shift}} }
 
   let shiftWorkerId = null, shiftDate = null, selectedShiftType = null;
 
@@ -614,7 +607,7 @@
       const dow=d.getDay();
       const isWeekend=dow===0||dow===6;
       const isToday=dateStr===todayStr;
-      const isDaySelected=selectedDate===dateStr;
+      const isDaySelected=selectedDates.has(dateStr);
 
       const shiftItems=scheduleData.workers.map(w=>{
         const shift=scheduleData.shifts?.[dateStr]?.[w.id];
@@ -689,11 +682,8 @@
     document.querySelectorAll('.cal-shift-item').forEach(item=>{
       item.classList.toggle('selected',selectedCells.has(getCellKey(item.dataset.worker,item.dataset.date)));
     });
-    document.querySelectorAll('.cal-day').forEach(day=>{
-      day.classList.toggle('day-selected',day.dataset.date===selectedDate);
-    });
-    document.querySelectorAll('.cal-day-num').forEach(num=>{
-      num.classList.toggle('day-selected',num.dataset.date===selectedDate);
+    document.querySelectorAll('.cal-day[data-date]').forEach(day=>{
+      day.classList.toggle('day-selected', selectedDates.has(day.dataset.date));
     });
 
     const bar=document.getElementById('shift-action-bar');
@@ -751,28 +741,34 @@
   gridWrap.addEventListener('mousedown',e=>{
     const item=e.target.closest('.cal-shift-item');
     if (item) {
-      isDragSelecting=true;
-      selectedDate=null;
+      isDragSelecting=true; selectedDates.clear();
       const key=getCellKey(item.dataset.worker,item.dataset.date);
       if (e.ctrlKey||e.metaKey) { if(selectedCells.has(key))selectedCells.delete(key); else selectedCells.add(key); }
       else { selectedCells.clear(); selectedCells.add(key); }
       updateSelectionUI(); e.preventDefault(); return;
     }
-    const dayNum=e.target.closest('.cal-day-num');
-    if (dayNum&&dayNum.dataset.date) {
-      selectedCells.clear();
-      selectedDate=selectedDate===dayNum.dataset.date?null:dayNum.dataset.date;
-      updateSelectionUI(); e.preventDefault(); return;
-    }
     const addArea=e.target.closest('.cal-add-area');
     if (addArea) { openShiftModalForDay(addArea.dataset.date); e.preventDefault(); return; }
-    if (!e.target.closest('.cal-shift-item')) { selectedCells.clear(); selectedDate=null; updateSelectionUI(); }
+    // 날짜 셀 클릭/드래그 (shift item 아닐 때)
+    const calDay=e.target.closest('.cal-day[data-date]');
+    if (calDay) {
+      selectedCells.clear(); isDayDragSelecting=true;
+      if (!e.shiftKey) selectedDates.clear();
+      selectedDates.add(calDay.dataset.date);
+      updateSelectionUI(); e.preventDefault(); return;
+    }
+    selectedCells.clear(); selectedDates.clear(); updateSelectionUI();
   });
 
   gridWrap.addEventListener('mouseover',e=>{
-    if (!isDragSelecting) return;
-    const item=e.target.closest('.cal-shift-item'); if (!item) return;
-    selectedCells.add(getCellKey(item.dataset.worker,item.dataset.date)); updateSelectionUI();
+    if (isDragSelecting) {
+      const item=e.target.closest('.cal-shift-item'); if (!item) return;
+      selectedCells.add(getCellKey(item.dataset.worker,item.dataset.date)); updateSelectionUI(); return;
+    }
+    if (isDayDragSelecting) {
+      const calDay=e.target.closest('.cal-day[data-date]'); if (!calDay) return;
+      selectedDates.add(calDay.dataset.date); updateSelectionUI();
+    }
   });
 
   // 더블클릭 → 팝오버
@@ -792,68 +788,21 @@
     showSchedCtxMenu(e.clientX,e.clientY,!!item);
   });
 
-  document.addEventListener('mouseup',()=>{ isDragSelecting=false; });
+  document.addEventListener('mouseup',()=>{ isDragSelecting=false; isDayDragSelecting=false; });
 
   // ── 시간표 컨텍스트 메뉴 ──
   const schedCtxMenu=document.getElementById('sched-ctx-menu');
 
   function showSchedCtxMenu(x,y,hasShift) {
-    document.getElementById('sched-ctx-edit').style.display=hasShift?'':'none';
     document.getElementById('sched-ctx-delete-shift').style.display=hasShift?'':'none';
-    const canPasteDay=!!copiedDayShifts;
-    const canPasteWeek=!!copiedWeekShifts;
-    document.getElementById('sched-ctx-paste-day').classList.toggle('disabled',!canPasteDay);
-    document.getElementById('sched-ctx-paste-week').classList.toggle('disabled',!canPasteWeek);
+    document.getElementById('sched-ctx-clear-day').style.display=hasShift?'none':'';
     schedCtxMenu.classList.add('show');
-    const mw=170,mh=schedCtxMenu.offsetHeight||200;
+    const mw=160,mh=60;
     schedCtxMenu.style.left=(x+mw>innerWidth?x-mw:x)+'px';
     schedCtxMenu.style.top=(y+mh>innerHeight?y-mh:y)+'px';
   }
 
   function hideSchedCtxMenu() { schedCtxMenu.classList.remove('show'); }
-
-  document.getElementById('sched-ctx-edit').addEventListener('click',()=>{
-    if (schedCtxWorkerId&&schedCtxDate) openShiftModal(schedCtxWorkerId,schedCtxDate);
-    hideSchedCtxMenu();
-  });
-
-  document.getElementById('sched-ctx-copy-day').addEventListener('click',()=>{
-    if (!schedCtxDate) return;
-    const dayShifts={};
-    scheduleData.workers.forEach(w=>{ const s=scheduleData.shifts?.[schedCtxDate]?.[w.id]; if(s)dayShifts[w.id]={...s}; });
-    copiedDayShifts={date:schedCtxDate,shifts:dayShifts};
-    toast(`${schedCtxDate} 복사됨 ✓`); hideSchedCtxMenu();
-  });
-
-  document.getElementById('sched-ctx-copy-week').addEventListener('click',()=>{
-    if (!schedCtxDate) return;
-    const weekDates=getWeekDates(schedCtxDate);
-    const weekData={};
-    weekDates.forEach(ds=>{ const d={}; scheduleData.workers.forEach(w=>{ const s=scheduleData.shifts?.[ds]?.[w.id]; if(s)d[w.id]={...s}; }); if(Object.keys(d).length)weekData[ds]=d; });
-    copiedWeekShifts={startDate:weekDates[0],shifts:weekData};
-    toast(`이 주 복사됨 ✓ (${weekDates[0]}~${weekDates[6]})`); hideSchedCtxMenu();
-  });
-
-  document.getElementById('sched-ctx-paste-day').addEventListener('click',()=>{
-    if (!copiedDayShifts||!schedCtxDate) return;
-    if (!scheduleData.shifts[schedCtxDate]) scheduleData.shifts[schedCtxDate]={};
-    Object.assign(scheduleData.shifts[schedCtxDate], JSON.parse(JSON.stringify(copiedDayShifts.shifts)));
-    saveSchedule(); renderScheduleGrid(); toast('붙여넣기됨 ✓'); hideSchedCtxMenu();
-  });
-
-  document.getElementById('sched-ctx-paste-week').addEventListener('click',()=>{
-    if (!copiedWeekShifts||!schedCtxDate) return;
-    const targetWeek=getWeekDates(schedCtxDate);
-    const srcWeek=getWeekDates(copiedWeekShifts.startDate);
-    srcWeek.forEach((srcDate,i)=>{
-      const tgtDate=targetWeek[i];
-      const dayShifts=copiedWeekShifts.shifts[srcDate];
-      if (!dayShifts||!Object.keys(dayShifts).length) return;
-      if (!scheduleData.shifts[tgtDate]) scheduleData.shifts[tgtDate]={};
-      Object.assign(scheduleData.shifts[tgtDate], JSON.parse(JSON.stringify(dayShifts)));
-    });
-    saveSchedule(); renderScheduleGrid(); toast('주 단위 붙여넣기됨 ✓'); hideSchedCtxMenu();
-  });
 
   document.getElementById('sched-ctx-delete-shift').addEventListener('click',()=>{
     if (!schedCtxWorkerId||!schedCtxDate) return;
@@ -1028,31 +977,48 @@
       if (popoverEl.classList.contains('show')){closePopover();return;}
       if (document.getElementById('shift-modal-overlay').classList.contains('show')){closeShiftModal();return;}
       if (document.getElementById('modal-overlay').classList.contains('show')){closeModal();return;}
-      if (appMode==='schedule'&&(selectedCells.size>0||selectedDate)){selectedCells.clear();selectedDate=null;updateSelectionUI();}
+      if (appMode==='schedule'&&(selectedCells.size>0||selectedDates.size>0)){selectedCells.clear();selectedDates.clear();updateSelectionUI();}
       return;
     }
     if (appMode==='schedule') {
       const isInput=document.activeElement.tagName==='INPUT'||document.activeElement.tagName==='TEXTAREA';
       if ((e.ctrlKey||e.metaKey)&&e.key==='c'&&!isInput) {
-        // 날짜 단위 복사 우선
-        if (selectedDate) {
-          const dayShifts={};
-          scheduleData.workers.forEach(w=>{const s=scheduleData.shifts?.[selectedDate]?.[w.id];if(s)dayShifts[w.id]={...s};});
-          copiedDayShifts={date:selectedDate,shifts:dayShifts};
-          toast(`${selectedDate} 복사됨 ✓`); return;
+        if (selectedDates.size>0) {
+          // 날짜 단위(단일/범위) 복사
+          const sortedDates=[...selectedDates].sort();
+          const shifts={};
+          sortedDates.forEach(ds=>{
+            const d={};
+            scheduleData.workers.forEach(w=>{const s=scheduleData.shifts?.[ds]?.[w.id];if(s)d[w.id]={...s};});
+            if(Object.keys(d).length)shifts[ds]=d;
+          });
+          copiedDateRangeShifts={sortedDates,shifts};
+          toast(`${sortedDates.length}일 복사됨 ✓`); e.preventDefault(); return;
         }
-        // shift 단위 복사
-        if (selectedCells.size===1){const [wId,date]=[...selectedCells][0].split('|');const shift=scheduleData.shifts?.[date]?.[wId];if(shift){copiedShift={...shift};toast('복사됨 ✓');updateSelectionUI();}}
+        if (selectedCells.size===1){
+          const [wId,date]=[...selectedCells][0].split('|');
+          const shift=scheduleData.shifts?.[date]?.[wId];
+          if(shift){copiedShift={...shift};toast('복사됨 ✓');updateSelectionUI();}
+        }
       }
       if ((e.ctrlKey||e.metaKey)&&e.key==='v'&&!isInput) {
-        // 날짜 단위 붙여넣기
-        if (selectedDate&&copiedDayShifts) {
-          if (!scheduleData.shifts[selectedDate]) scheduleData.shifts[selectedDate]={};
-          Object.assign(scheduleData.shifts[selectedDate],JSON.parse(JSON.stringify(copiedDayShifts.shifts)));
-          saveSchedule(); renderScheduleGrid(); toast('붙여넣기됨 ✓'); return;
+        if (selectedDates.size>0&&copiedDateRangeShifts) {
+          // 날짜 단위 붙여넣기: 선택된 첫 날짜부터 순서대로
+          const targetStart=new Date([...selectedDates].sort()[0]);
+          copiedDateRangeShifts.sortedDates.forEach((srcDate,i)=>{
+            const tgt=new Date(targetStart); tgt.setDate(targetStart.getDate()+i);
+            const tgtStr=formatDate(tgt);
+            const dayShifts=copiedDateRangeShifts.shifts[srcDate];
+            if(!dayShifts)return;
+            if(!scheduleData.shifts[tgtStr])scheduleData.shifts[tgtStr]={};
+            Object.assign(scheduleData.shifts[tgtStr],JSON.parse(JSON.stringify(dayShifts)));
+          });
+          saveSchedule(); renderScheduleGrid(); toast(`${copiedDateRangeShifts.sortedDates.length}일 붙여넣기됨 ✓`); e.preventDefault(); return;
         }
-        // shift 단위 붙여넣기
-        if (copiedShift&&selectedCells.size>0){selectedCells.forEach(key=>{const [wId,date]=key.split('|');if(!scheduleData.shifts[date])scheduleData.shifts[date]={};scheduleData.shifts[date][wId]={...copiedShift};});saveSchedule();renderScheduleGrid();updateSelectionUI();toast(`${selectedCells.size}개 붙여넣기됨 ✓`);}
+        if (copiedShift&&selectedCells.size>0){
+          selectedCells.forEach(key=>{const [wId,date]=key.split('|');if(!scheduleData.shifts[date])scheduleData.shifts[date]={};scheduleData.shifts[date][wId]={...copiedShift};});
+          saveSchedule();renderScheduleGrid();updateSelectionUI();toast(`${selectedCells.size}개 붙여넣기됨 ✓`);
+        }
       }
       if (e.key==='Delete'&&!isInput&&selectedCells.size>0) {
         selectedCells.forEach(key=>{const [wId,date]=key.split('|');if(scheduleData.shifts?.[date]?.[wId]){delete scheduleData.shifts[date][wId];if(!Object.keys(scheduleData.shifts[date]).length)delete scheduleData.shifts[date];}});
