@@ -469,6 +469,7 @@
   let scheduleData = { workers:[], shifts:{}, handover:'' };
   let currentMonth = (() => { const d=new Date(); return new Date(d.getFullYear(),d.getMonth(),1); })();
   let scheduleSaveTimer = null;
+  const scheduleUndoStack = [];
 
   let selectedCells = new Set();
   let copiedShift = null;
@@ -521,6 +522,12 @@
   }
   document.getElementById('mode-memo-btn').addEventListener('click', ()=>switchMode('memo'));
   document.getElementById('mode-schedule-btn').addEventListener('click', ()=>switchMode('schedule'));
+
+  // ── 되돌리기 ──
+  function pushScheduleUndo() {
+    scheduleUndoStack.push(JSON.stringify(scheduleData.shifts));
+    if (scheduleUndoStack.length > 50) scheduleUndoStack.shift();
+  }
 
   // ── Firebase 저장 ──
   async function saveSchedule() {
@@ -619,16 +626,16 @@
         let timeStr='';
         const noTime=['off','annual'].includes(shift.type);
         if (!noTime&&shift.start&&shift.end) timeStr=`${shift.start.slice(0,5)}~${shift.end.slice(0,5)}`;
-        // 배지: 밝은 배경 + 색상 왼쪽 바
-        const bgColor=hexToRgba(type?.bg||'#888',0.13);
-        const textColor=type?.bg||'#333';
-        const darkBg=type?.id==='off';
+        // 배지: 근무자 색상 기반
+        const wi=scheduleData.workers.findIndex(ww=>ww.id===w.id);
+        const workerColor=getWorkerColor(wi);
+        const bgColor=hexToRgba(workerColor,0.13);
         return `<div class="cal-shift-item${isSel?' selected':''}" data-worker="${w.id}" data-date="${dateStr}"
-          style="background:${darkBg?hexToRgba('#8e8e93',0.12):bgColor};">
-          <span class="cal-shift-type-bar" style="background:${type?.bg};"></span>
-          <span class="cal-shift-short" style="color:${type?.bg};">${esc(type?.short||'')}</span>
-          <span class="cal-shift-name" style="color:${darkBg?'var(--sub)':textColor};">${esc(dispName)}</span>
-          ${timeStr?`<span class="cal-shift-time" style="color:${darkBg?'var(--sub)':textColor};">${timeStr}</span>`:''}
+          style="background:${bgColor};">
+          <span class="cal-shift-type-bar" style="background:${workerColor};"></span>
+          <span class="cal-shift-short" style="color:${workerColor};">${esc(type?.short||'')}</span>
+          <span class="cal-shift-name" style="color:${workerColor};">${esc(dispName)}</span>
+          ${timeStr?`<span class="cal-shift-time" style="color:${workerColor};">${timeStr}</span>`:''}
         </div>`;
       }).join('');
 
@@ -703,6 +710,7 @@
 
   function applyToSelected(typeId) {
     if (!selectedCells.size) return;
+    pushScheduleUndo();
     const type=SHIFT_TYPES.find(t=>t.id===typeId);
     selectedCells.forEach(key=>{ const [wId,date]=key.split('|'); if(!scheduleData.shifts[date])scheduleData.shifts[date]={}; const noTime=['off','annual'].includes(typeId); scheduleData.shifts[date][wId]={type:typeId,start:noTime?'':type.defaultStart,end:noTime?'':type.defaultEnd}; });
     saveSchedule(); renderScheduleGrid(); updateSelectionUI();
@@ -718,6 +726,7 @@
 
   document.getElementById('action-paste-btn').addEventListener('click',()=>{
     if (!copiedShift||!selectedCells.size) return;
+    pushScheduleUndo();
     selectedCells.forEach(key=>{ const [wId,date]=key.split('|'); if(!scheduleData.shifts[date])scheduleData.shifts[date]={}; scheduleData.shifts[date][wId]={...copiedShift}; });
     saveSchedule(); renderScheduleGrid(); updateSelectionUI();
     toast(`${selectedCells.size}개 붙여넣기됨 ✓`);
@@ -729,6 +738,7 @@
   });
 
   document.getElementById('action-clear-btn').addEventListener('click',()=>{
+    pushScheduleUndo();
     selectedCells.forEach(key=>{ const [wId,date]=key.split('|'); if(scheduleData.shifts?.[date]?.[wId]){delete scheduleData.shifts[date][wId]; if(!Object.keys(scheduleData.shifts[date]).length)delete scheduleData.shifts[date];} });
     saveSchedule(); renderScheduleGrid(); selectedCells.clear(); updateSelectionUI(); toast('초기화됨');
   });
@@ -807,6 +817,7 @@
   document.getElementById('sched-ctx-delete-shift').addEventListener('click',()=>{
     if (!schedCtxWorkerId||!schedCtxDate) return;
     if (scheduleData.shifts?.[schedCtxDate]?.[schedCtxWorkerId]) {
+      pushScheduleUndo();
       delete scheduleData.shifts[schedCtxDate][schedCtxWorkerId];
       if (!Object.keys(scheduleData.shifts[schedCtxDate]).length) delete scheduleData.shifts[schedCtxDate];
       saveSchedule(); renderScheduleGrid(); toast('삭제됨');
@@ -816,6 +827,7 @@
 
   document.getElementById('sched-ctx-clear-day').addEventListener('click',()=>{
     if (!schedCtxDate) return;
+    pushScheduleUndo();
     delete scheduleData.shifts[schedCtxDate];
     saveSchedule(); renderScheduleGrid(); toast('이 날 초기화됨');
     hideSchedCtxMenu();
@@ -874,6 +886,7 @@
 
   document.getElementById('popover-save-btn').addEventListener('click',()=>{
     if (!popoverWorkerId||!popoverDate||!popoverShiftType) { toast('근무 유형을 선택하세요'); return; }
+    pushScheduleUndo();
     if (!scheduleData.shifts[popoverDate]) scheduleData.shifts[popoverDate]={};
     const noTime=['off','annual'].includes(popoverShiftType);
     scheduleData.shifts[popoverDate][popoverWorkerId]={
@@ -886,6 +899,7 @@
 
   document.getElementById('popover-delete-btn').addEventListener('click',()=>{
     if (popoverWorkerId&&popoverDate&&scheduleData.shifts?.[popoverDate]?.[popoverWorkerId]) {
+      pushScheduleUndo();
       delete scheduleData.shifts[popoverDate][popoverWorkerId];
       if (!Object.keys(scheduleData.shifts[popoverDate]).length) delete scheduleData.shifts[popoverDate];
       saveSchedule(); renderScheduleGrid(); toast('삭제됨');
@@ -957,6 +971,7 @@
   document.getElementById('shift-save-btn').addEventListener('click',()=>{
     if (!shiftWorkerId){const sel=document.getElementById('shift-worker-select');shiftWorkerId=sel.value;if(!shiftWorkerId){toast('근무자를 선택하세요');return;}}
     if (!selectedShiftType){toast('근무 유형을 선택하세요');return;}
+    pushScheduleUndo();
     if (!scheduleData.shifts[shiftDate])scheduleData.shifts[shiftDate]={};
     const noTime=['off','annual'].includes(selectedShiftType);
     scheduleData.shifts[shiftDate][shiftWorkerId]={type:selectedShiftType,start:noTime?'':document.getElementById('shift-start').value,end:noTime?'':document.getElementById('shift-end').value};
@@ -964,7 +979,7 @@
   });
 
   document.getElementById('shift-clear-btn').addEventListener('click',()=>{
-    if (shiftWorkerId&&scheduleData.shifts?.[shiftDate]?.[shiftWorkerId]){delete scheduleData.shifts[shiftDate][shiftWorkerId];if(!Object.keys(scheduleData.shifts[shiftDate]).length)delete scheduleData.shifts[shiftDate];saveSchedule();renderScheduleGrid();toast('초기화됨');}
+    if (shiftWorkerId&&scheduleData.shifts?.[shiftDate]?.[shiftWorkerId]){pushScheduleUndo();delete scheduleData.shifts[shiftDate][shiftWorkerId];if(!Object.keys(scheduleData.shifts[shiftDate]).length)delete scheduleData.shifts[shiftDate];saveSchedule();renderScheduleGrid();toast('초기화됨');}
     closeShiftModal();
   });
 
@@ -982,6 +997,12 @@
     }
     if (appMode==='schedule') {
       const isInput=document.activeElement.tagName==='INPUT'||document.activeElement.tagName==='TEXTAREA';
+      if ((e.ctrlKey||e.metaKey)&&e.key==='z'&&!isInput) {
+        if (!scheduleUndoStack.length) { toast('더 이상 되돌릴 수 없어요'); e.preventDefault(); return; }
+        scheduleData.shifts=JSON.parse(scheduleUndoStack.pop());
+        saveSchedule(); renderScheduleGrid(); updateSelectionUI(); toast('되돌림 ✓');
+        e.preventDefault(); return;
+      }
       if ((e.ctrlKey||e.metaKey)&&e.key==='c'&&!isInput) {
         if (selectedDates.size>0) {
           // 날짜 단위(단일/범위) 복사
@@ -1003,6 +1024,7 @@
       }
       if ((e.ctrlKey||e.metaKey)&&e.key==='v'&&!isInput) {
         if (selectedDates.size>0&&copiedDateRangeShifts) {
+          pushScheduleUndo();
           // 날짜 단위 붙여넣기: 선택된 첫 날짜부터 순서대로
           const targetStart=new Date([...selectedDates].sort()[0]);
           copiedDateRangeShifts.sortedDates.forEach((srcDate,i)=>{
@@ -1016,11 +1038,13 @@
           saveSchedule(); renderScheduleGrid(); toast(`${copiedDateRangeShifts.sortedDates.length}일 붙여넣기됨 ✓`); e.preventDefault(); return;
         }
         if (copiedShift&&selectedCells.size>0){
+          pushScheduleUndo();
           selectedCells.forEach(key=>{const [wId,date]=key.split('|');if(!scheduleData.shifts[date])scheduleData.shifts[date]={};scheduleData.shifts[date][wId]={...copiedShift};});
           saveSchedule();renderScheduleGrid();updateSelectionUI();toast(`${selectedCells.size}개 붙여넣기됨 ✓`);
         }
       }
       if (e.key==='Delete'&&!isInput&&selectedCells.size>0) {
+        pushScheduleUndo();
         selectedCells.forEach(key=>{const [wId,date]=key.split('|');if(scheduleData.shifts?.[date]?.[wId]){delete scheduleData.shifts[date][wId];if(!Object.keys(scheduleData.shifts[date]).length)delete scheduleData.shifts[date];}});
         saveSchedule(); renderScheduleGrid(); selectedCells.clear(); updateSelectionUI(); toast('삭제됨');
       }
