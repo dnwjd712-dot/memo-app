@@ -616,28 +616,33 @@
       const isToday=dateStr===todayStr;
       const isDaySelected=selectedDates.has(dateStr);
 
-      const shiftItems=scheduleData.workers.map(w=>{
-        const shift=scheduleData.shifts?.[dateStr]?.[w.id];
-        if (!shift) return '';
-        const type=SHIFT_TYPES.find(t=>t.id===shift.type);
-        const key=getCellKey(w.id,dateStr);
-        const isSel=selectedCells.has(key);
-        const dispName=w.name.length>3?w.name.slice(0,3):w.name;
-        let timeStr='';
-        const noTime=['off','annual'].includes(shift.type);
-        if (!noTime&&shift.start&&shift.end) timeStr=`${shift.start.slice(0,5)}~${shift.end.slice(0,5)}`;
-        // 배지: 근무자 색상 기반
-        const wi=scheduleData.workers.findIndex(ww=>ww.id===w.id);
-        const workerColor=getWorkerColor(wi);
-        const bgColor=hexToRgba(workerColor,0.13);
-        return `<div class="cal-shift-item${isSel?' selected':''}" data-worker="${w.id}" data-date="${dateStr}"
-          style="background:${bgColor};">
-          <span class="cal-shift-type-bar" style="background:${workerColor};"></span>
-          <span class="cal-shift-short" style="color:${workerColor};">${esc(type?.short||'')}</span>
-          <span class="cal-shift-name" style="color:${workerColor};">${esc(dispName)}</span>
-          ${timeStr?`<span class="cal-shift-time" style="color:${workerColor};">${timeStr}</span>`:''}
-        </div>`;
-      }).join('');
+      const shiftItems=scheduleData.workers
+        .map((w,wi)=>{
+          const shift=scheduleData.shifts?.[dateStr]?.[w.id];
+          if (!shift) return null;
+          const type=SHIFT_TYPES.find(t=>t.id===shift.type);
+          const noTime=['off','annual'].includes(shift.type);
+          const sortKey=(!noTime&&shift.start)?shift.start:'99:99';
+          return {w,wi,shift,type,noTime,sortKey};
+        })
+        .filter(Boolean)
+        .sort((a,b)=>a.sortKey.localeCompare(b.sortKey))
+        .map(({w,wi,shift,type,noTime})=>{
+          const key=getCellKey(w.id,dateStr);
+          const isSel=selectedCells.has(key);
+          const dispName=w.name.length>3?w.name.slice(0,3):w.name;
+          let timeStr='';
+          if (!noTime&&shift.start&&shift.end) timeStr=`${shift.start.slice(0,5)}~${shift.end.slice(0,5)}`;
+          const workerColor=getWorkerColor(wi);
+          const bgColor=hexToRgba(workerColor,0.13);
+          return `<div class="cal-shift-item${isSel?' selected':''}" data-worker="${w.id}" data-date="${dateStr}"
+            style="background:${bgColor};">
+            <span class="cal-shift-type-bar" style="background:${workerColor};"></span>
+            <span class="cal-shift-short" style="color:${workerColor};">${esc(type?.short||'')}</span>
+            <span class="cal-shift-name" style="color:${workerColor};">${esc(dispName)}</span>
+            ${timeStr?`<span class="cal-shift-time" style="color:${workerColor};">${timeStr}</span>`:''}
+          </div>`;
+        }).join('');
 
       cells+=`<div class="cal-day${isWeekend?' is-weekend':''}${isToday?' is-today':''}${isDaySelected?' day-selected':''}" data-date="${dateStr}">
         <div class="cal-day-num${isToday?' today-num':''}${isWeekend?' weekend-num':''}" data-date="${dateStr}">${dayNum}</div>
@@ -1004,6 +1009,13 @@
         e.preventDefault(); return;
       }
       if ((e.ctrlKey||e.metaKey)&&e.key==='c'&&!isInput) {
+        if (selectedCells.size===1&&selectedDates.size===0){
+          // 단일 뱃지 복사
+          const [wId,date]=[...selectedCells][0].split('|');
+          const shift=scheduleData.shifts?.[date]?.[wId];
+          if(shift){copiedShift={...shift};copiedDateRangeShifts=null;toast('복사됨 ✓');updateSelectionUI();}
+          e.preventDefault(); return;
+        }
         if (selectedDates.size>0) {
           // 날짜 단위(단일/범위) 복사
           const sortedDates=[...selectedDates].sort();
@@ -1013,13 +1025,8 @@
             scheduleData.workers.forEach(w=>{const s=scheduleData.shifts?.[ds]?.[w.id];if(s)d[w.id]={...s};});
             if(Object.keys(d).length)shifts[ds]=d;
           });
-          copiedDateRangeShifts={sortedDates,shifts};
+          copiedDateRangeShifts={sortedDates,shifts};copiedShift=null;
           toast(`${sortedDates.length}일 복사됨 ✓`); e.preventDefault(); return;
-        }
-        if (selectedCells.size===1){
-          const [wId,date]=[...selectedCells][0].split('|');
-          const shift=scheduleData.shifts?.[date]?.[wId];
-          if(shift){copiedShift={...shift};toast('복사됨 ✓');updateSelectionUI();}
         }
       }
       if ((e.ctrlKey||e.metaKey)&&e.key==='v'&&!isInput) {
